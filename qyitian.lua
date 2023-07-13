@@ -310,11 +310,15 @@ local qyt__toudu = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self.name) and not player.faceup and not player:isKongcheng()
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#qyt__toudu-invoke")
+    local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#qyt__toudu-invoke", true)
+    if #card > 0 then
+      self.cost_data = card
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:drawCards(1, self.name)
+    room:throwCard(self.cost_data, self.name, player, player)
     player:turnOver()
     if player.dead then return end
     local success, dat = room:askForUseActiveSkill(player, "qyt__toudu_viewas", "#qyt__toudu-slash", false)
@@ -362,10 +366,10 @@ Fk:loadTranslationTable{
   ["qyt__zhenggong"] = "争功",
   [":qyt__zhenggong"] = "其他角色回合开始前，若你的武将牌正面朝上，你可以获得一个额外的回合，此回合结束后，你将武将牌翻面。",
   ["qyt__toudu"] = "偷渡",
-  [":qyt__toudu"] = "当你受到伤害后，若你的武将牌背面朝上，你可以摸一张牌并翻面，然后视为使用一张无距离限制的【杀】。",
+  [":qyt__toudu"] = "当你受到伤害后，若你的武将牌背面朝上，你可以弃置一张牌并翻面，然后视为使用一张无距离限制的【杀】。",
   ["#qyt__zhenggong-invoke"] = "争功：%dest 的回合即将开始，你可以发动“争功”抢先执行一个回合！",
   ["@@qyt__zhenggong"] = "争功",
-  ["#qyt__toudu-invoke"] = "偷渡：你可以摸一张牌并翻面，视为使用一张无距离限制的【杀】",
+  ["#qyt__toudu-invoke"] = "偷渡：你可以弃置一张牌并翻面，视为使用一张无距离限制的【杀】",
   ["qyt__toudu_viewas"] = "偷渡",
   ["#qyt__toudu-slash"] = "偷渡：视为使用一张无距离限制的【杀】",
 
