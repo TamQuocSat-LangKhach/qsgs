@@ -12,6 +12,98 @@ Fk:loadTranslationTable{
   [":qyt__guixin"] = "结束阶段开始时，你可以选择一项：1.改变一名其他角色的势力；2.获得一个未加入游戏的武将牌上的主公技。",
 }
 
+local caochong = General(extension, "qyt__caochong", "wei", 3)
+local qyt__chengxiang = fk.CreateTriggerSkill{
+  name = "qyt__chengxiang",
+  events = {fk.Damaged},
+  anim_type = "masochism",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and not player:isNude() and data.card and not data.card:isVirtual()
+  end,
+  on_trigger = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, self.name, data.card.number)
+    self:doCost(event, target, player, data)
+    player.room:setPlayerMark(player, self.name, 0)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local success, dat = player.room:askForUseActiveSkill(player, "qyt__chengxiang_active",
+      "#qyt__chengxiang-invoke:::"..data.card.number, true)
+    if success then
+      self.cost_data = dat
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data.cards, self.name, player, player)
+    for _, id in ipairs(self.cost_data.targets) do
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        if p:isWounded() then
+          room:recover{
+            who = p,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name
+          }
+        else
+          p:drawCards(2, self.name)
+        end
+      end
+    end
+  end,
+}
+local qyt__chengxiang_active = fk.CreateActiveSkill{
+  name = "qyt__chengxiang_active",
+  mute = true,
+  min_card_num = 1,
+  min_target_num = 1,
+  card_filter = function(self, to_select, selected)
+    local num = 0
+    for _, id in ipairs(selected) do
+      num = num + Fk:getCardById(id).number
+    end
+    return num + Fk:getCardById(to_select).number <= Self:getMark("qyt__chengxiang")
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    local num = 0
+    for _, id in ipairs(selected_cards) do
+      num = num + Fk:getCardById(id).number
+    end
+    return num == Self:getMark("qyt__chengxiang") and #selected < #selected_cards
+  end,
+  on_use = function(self, room, effect)
+  end,
+}
+local qyt__conghui = fk.CreateTriggerSkill{
+  name = "qyt__conghui",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseChanging},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.to == Player.Discard
+  end,
+  on_use = function(self, event, target, player, data)
+    return true
+  end,
+}
+local qyt__zaoyao = fk.CreateTriggerSkill{
+  name = "qyt__zaoyao",
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and player:getHandcardNum() > 13
+  end,
+  on_use = function(self, event, target, player, data)
+    player:throwAllCards("h")
+    player.room:loseHp(player, 1, self.name)
+  end,
+}
+Fk:addSkill(qyt__chengxiang_active)
+caochong:addSkill(qyt__chengxiang)
+caochong:addSkill(qyt__conghui)
+caochong:addSkill(qyt__zaoyao)
 Fk:loadTranslationTable{
   ["qyt__caochong"] = "曹冲",
   ["qyt__chengxiang"] = "称象",
@@ -21,6 +113,8 @@ Fk:loadTranslationTable{
   [":qyt__conghui"] = "锁定技，你跳过弃牌阶段。",
   ["qyt__zaoyao"] = "早夭",
   [":qyt__zaoyao"] = "锁定技，结束阶段开始时，若你的手牌数大于13，你须弃置所有手牌并失去1点体力。",
+  ["qyt__chengxiang-active"] = "称象",
+  ["#qyt__chengxiang-invoke"] = "称象：你可以弃置点数之和为%arg的牌，令至多弃牌数的角色回复体力或摸牌",
 }
 
 local zhangjunyi = General(extension, "qyt__zhanghe", "qun", 4)
@@ -254,12 +348,55 @@ Fk:loadTranslationTable{
   [":qyt__dushi"] = "锁定技，当你死亡时，杀死你的角色获得〖崩坏〗。",
 }
 
+local guzhielai = General(extension, "qyt__dianwei", "wei", 4)
+local qyt__sizhan = fk.CreateTriggerSkill{
+  name = "qyt__sizhan",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.DamageInflicted, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      if event == fk.DamageInflicted then
+        return true
+      else
+        return player.phase == Player.Finish and player:getMark("@qyt__sizhan") > 0
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.DamageInflicted then
+      room:addPlayerMark(player, "@qyt__sizhan", data.damage)
+      return true
+    else
+      local n = player:getMark("@qyt__sizhan")
+      room:setPlayerMark(player, "@qyt__sizhan", 0)
+      room:loseHp(player, n, self.name)
+    end
+  end,
+}
+local qyt__shenli = fk.CreateTriggerSkill{
+  name = "qyt__shenli",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player:getMark("@qyt__sizhan") > 0 and
+      data.card and data.card.trueName == "slash" and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + math.min(player:getMark("@qyt__sizhan"), 3)
+  end,
+}
+guzhielai:addSkill(qyt__sizhan)
+guzhielai:addSkill(qyt__shenli)
 Fk:loadTranslationTable{
   ["qyt__dianwei"] = "古之恶来",
   ["qyt__sizhan"] = "死战",
   [":qyt__sizhan"] = "锁定技，当你受到伤害时，防止此伤害并获得等量的“死战”标记；结束阶段，你弃置所有的“死战”标记并失去等量的体力。 ",
   ["qyt__shenli"] = "神力",
-  [":qyt__shenli"] = "锁定技，你于出牌阶段内第一次使用【杀】造成伤害时，此伤害+X（X为当前“死战”标记数，最多为3）。",
+  [":qyt__shenli"] = "锁定技，每阶段限一次，你于出牌阶段内使用【杀】造成伤害时，此伤害+X（X为当前“死战”标记数，最多为3）。",
+  ["@qyt__sizhan"] = "死战",
 }
 
 local dengshizai = General(extension, "qyt__dengai", "wei", 4)
@@ -387,6 +524,51 @@ Fk:loadTranslationTable{
   [":qyt__xiliang"] = "当其他角色于其弃牌阶段弃置一张红色牌后，你可以选择一项：1.将之置为“米”；2.获得之。",
 }
 
+local yitianjian = General(extension, "qyt__yitianjian", "wei", 4)
+local qyt__zhengfeng = fk.CreateAttackRangeSkill{
+  name = "qyt__zhengfeng",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  correct_func = function (self, from, to)
+    if from:hasSkill(self.name) and not from:getEquipment(Card.SubtypeWeapon) then
+      return from.hp - 1
+    end
+    return 0
+  end,
+}
+local qyt__zhenwei = fk.CreateTriggerSkill{
+  name = "qyt__zhenwei",
+  anim_type = "drawcard",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and data.card.name == "jink" and data.toCard and data.toCard.trueName == "slash" and
+      data.responseToEvent.from == player.id and player.room:getCardArea(data.card) == Card.Processing
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#qyt__zhenwei-invoke:::"..data.card:toLogString())
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:obtainCard(player, data.card, true, fk.ReasonJustMove)
+  end,
+}
+local qyt__yitian = fk.CreateTriggerSkill{
+  name = "qyt__yitian",
+  anim_type = "defensive",
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and string.find(data.to.general, "caocao")
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#qyt__yitian-invoke::"..data.to.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:doIndicate(player.id, {data.to.id})
+    data.damage = data.damage - 1
+  end,
+}
+yitianjian:addSkill(qyt__zhengfeng)
+yitianjian:addSkill(qyt__zhenwei)
+yitianjian:addSkill(qyt__yitian)
 Fk:loadTranslationTable{
   ["qyt__yitianjian"] = "倚天剑",
   ["qyt__zhengfeng"] = "争锋",
@@ -395,6 +577,8 @@ Fk:loadTranslationTable{
   [":qyt__zhenwei"] = "当你使用【杀】被【闪】抵消时，你可以获得处理区里的此【闪】。",
   ["qyt__yitian"] = "倚天",
   [":qyt__yitian"] = "联动技，当你对曹操造成伤害时，你可以令该伤害-1。",
+  ["#qyt__zhenwei-invoke"] = "镇威：你可以获得处理区里的此%arg",
+  ["#qyt__yitian-invoke"] = "倚天：你可以令你对%dest造成的伤害-1",
 }
 
 local panglingming = General(extension, "qyt__pangde", "wei", 4)
