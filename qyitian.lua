@@ -403,10 +403,9 @@ local dengshizai = General(extension, "qyt__dengai", "wei", 4)
 local qyt__zhenggong = fk.CreateTriggerSkill{
   name = "qyt__zhenggong",
   anim_type = "special",
-  events = {fk.EventPhaseChanging},
+  events = {fk.BeforeTurnStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and target ~= player and data.to == Player.RoundStart and player.faceup and
-      player:getMark("@@qyt__zhenggong") == 0
+    return player:hasSkill(self.name) and target ~= player and player.faceup
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#qyt__zhenggong-invoke::"..target.id)
@@ -414,29 +413,8 @@ local qyt__zhenggong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
-    room:setPlayerMark(player, "@@qyt__zhenggong", target.id)
     player:gainAnExtraTurn(true)
-    room.logic:breakTurn()
-  end,
-}
-local qyt__zhenggong_trigger = fk.CreateTriggerSkill{
-  name = "#qyt__zhenggong_trigger",
-  mute = true,
-  events = {fk.TurnEnd},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("@@qyt__zhenggong") ~= 0
-  end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:getPlayerById(player:getMark("@@qyt__zhenggong"))
-    room:setPlayerMark(player, "@@qyt__zhenggong", 0)
     player:turnOver()
-    if not to.dead then
-      to:gainAnExtraTurn(true)
-    end
   end,
 }
 local qyt__toudu = fk.CreateTriggerSkill{
@@ -493,7 +471,6 @@ local qyt__toudu_targetmod = fk.CreateTargetModSkill{
     return card and table.contains(card.skillNames, "qyt__toudu")
   end,
 }
-qyt__zhenggong:addRelatedSkill(qyt__zhenggong_trigger)
 Fk:addSkill(qyt__toudu_viewas)
 qyt__toudu:addRelatedSkill(qyt__toudu_targetmod)
 dengshizai:addSkill(qyt__zhenggong)
