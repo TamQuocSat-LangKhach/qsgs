@@ -146,7 +146,7 @@ local qyt__jueji = fk.CreateActiveSkill{
           break
         else
           if room:askForSkillInvoke(player, self.name, nil, "#qyt__jueji-invoke::"..target.id) then
-            room:broadcastSkillInvoke(self.name)
+            player:broadcastSkillInvoke(self.name)
             room:notifySkillInvoked(player, self.name)
             room:doIndicate(player.id, {target.id})
           else
