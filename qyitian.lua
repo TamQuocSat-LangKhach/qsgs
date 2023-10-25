@@ -325,6 +325,127 @@ Fk:loadTranslationTable{
   ["~qyt__caiwenji"] = "人生几何时，怀忧终年岁……",
 }
 
+local luboyan = General(extension, "qyt__luxun", "wu", 3, 3, General.Bigender)
+
+local shenjun = fk.CreateTriggerSkill{
+  name = "qyt__lbyshenjun",
+  events = {fk.GameStart, fk.EventPhaseStart, fk.DamageInflicted},
+  mute = true,
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    if event == fk.GameStart then return true
+    elseif player ~= target then return false end
+    if event == fk.EventPhaseStart then
+      return player.phase == Player.Start
+    else
+      return data.from and data.from.gender ~= player.gender and data.damageType ~= fk.ThunderDamage
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.DamageInflicted then
+      room:notifySkillInvoked(player, self.name, "defensive")
+      return true
+    end
+    room:notifySkillInvoked(player, self.name, "special")
+    local choices = {"male", "female"}  
+    if event == fk.EventPhaseStart then 
+      local gender
+      if player.gender == General.Male then gender = "male"
+      elseif player.gender == General.Female then gender = "female" end
+      table.removeOne(choices, gender)
+    end
+    local choice = room:askForChoice(player, choices, self.name, "#qyt__lbyshenjun-choose")
+    room:setPlayerProperty(player, "gender", choice == "male" and General.Male or General.Female)
+    room:sendLog{
+      type = "#qyt__lbyshenjun_log",
+      from = player.id,
+      arg = choice,
+    }
+    room:setPlayerMark(player, "@!qixi_" .. choice, 1) -- 依赖 gamemode 七夕模式
+    room:setPlayerMark(player, "@!qixi_" .. (choice == "male" and "female" or "male"), 0)
+  end,
+}
+
+local qyt__shaoying = fk.CreateTriggerSkill{
+  name = "qyt__shaoying",
+  anim_type = "offensive",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.damageType == fk.FireDamage and 
+      data.to:isAlive() and table.find(player.room.alive_players, function(p) return data.to:distanceTo(p) == 1 end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(table.filter(room.alive_players, function(p) return data.to:distanceTo(p) == 1 end), Util.IdMapper)
+    local target = room:askForChoosePlayers(player, targets, 1, 1, "#qyt__shaoying-ask:" .. data.to.id, self.name, true)
+    if #target > 0 then
+      self.cost_data = target[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastPlaySound("./packages/hegemony/audio/card/" .. (player.gender == General.Male and "male" or "female" ) .."/burning_camps") -- 依赖国战
+    local target = room:getPlayerById(self.cost_data)
+    local judge = {
+      who = player,
+      reason = self.name,
+      pattern = ".|.|heart,diamond",
+    }
+    room:judge(judge)
+    if judge.card.color == Card.Red and not target.dead and not player.dead then
+      room:damage{
+        from = player,
+        to = target,
+        damage = 1,
+        damageType = fk.FireDamage,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+
+local qyt__zonghuo = fk.CreateTriggerSkill{
+  name = "qyt__zonghuo",
+  anim_type = "offensive",
+  events = { fk.AfterCardUseDeclared },
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, _, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash" and data.card.name ~= "fire__slash"
+  end,
+  on_use = function(_, _, _, _, data)
+    local card = Fk:cloneCard("fire__slash")
+    card.skillName = self.name
+    card:addSubcard(data.card)
+    data.card = card
+  end,
+}
+
+luboyan:addSkill(shenjun)
+luboyan:addSkill(qyt__shaoying)
+luboyan:addSkill(qyt__zonghuo)
+
+Fk:loadTranslationTable{
+  ["qyt__luxun"] = "陆伯言",
+  ["qyt__lbyshenjun"] = "神君",
+  [":qyt__lbyshenjun"] = "锁定技，游戏开始时，你选择自己的性别为男或女；准备阶段开始时，你须改变性别；当你受到异性角色造成的非雷电伤害时，你防止之。",
+  ["qyt__shaoying"] = "烧营",
+  [":qyt__shaoying"] = "当你对一名角色A造成火焰伤害后，你可选择A距离为1的一名角色B，判定，若为红色，你对B造成1点火焰伤害。", -- 郭修化
+  -- "当你对一名不处于连环状态的角色A造成火焰伤害扣减体力前，你可选择A距离为1的一名角色B，此伤害结算完毕后，你进行一次判定：若结果为红色，你对B造成1点火焰伤害。",
+  ["qyt__zonghuo"] = "纵火",
+  [":qyt__zonghuo"] = "锁定技，当你声明使用【杀】后，若此【杀】不为火【杀】，你将此【杀】改为火【杀】。",
+
+  ["#qyt__lbyshenjun-choose"] = "神君：选择你的性别",
+  ["#qyt__lbyshenjun_log"] = "%from 性别改为 %arg",
+  ["#qyt__shaoying-ask"] = "烧营：你可选择 %src 距离为1的一名角色，判定，若为红色，你对其造成1点火焰伤害",
+  ["male"] = "男性",
+  ["female"] = "女性",
+
+  ["$qyt__zonghuo"] = "（燃烧声）",
+}
+
 Fk:loadTranslationTable{
   ["qyt__zhonghui"] = "钟士季",
   ["qyt__gongmou"] = "共谋",
@@ -334,7 +455,7 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["qyt__jiangwei"] = "姜伯约",
   ["qyt__lexue"] = "乐学",
-  [":qyt__lexue"] = "出牌阶段限一次，你可以令一名其他角色展示一张手牌：若为基本牌或非延时类锦囊牌，本回合你可以将与相同花色的牌当此牌使用或打出，"..
+  [":qyt__lexue"] = "出牌阶段限一次，你可以令一名其他角色展示一张手牌：若为基本牌或普通锦囊牌，本回合你可以将与相同花色的牌当此牌使用或打出，"..
   "否则你获得之。",
   ["qyt__xunzhi"] = "殉志",
   [":qyt__xunzhi"] = "出牌阶段，你可以摸三张牌，然后变身为游戏外的一名蜀势力武将，若如此做，此回合结束时你死亡。",
