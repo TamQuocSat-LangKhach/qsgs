@@ -387,7 +387,7 @@ local qyt__shaoying = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastPlaySound("./packages/hegemony/audio/card/" .. (player.gender == General.Male and "male" or "female" ) .."/burning_camps") -- 依赖国战
+    -- room:broadcastPlaySound("./packages/hegemony/audio/card/" .. (player.gender == General.Male and "male" or "female" ) .."/burning_camps") -- 依赖国战
     local target = room:getPlayerById(self.cost_data)
     local judge = {
       who = player,
@@ -415,7 +415,7 @@ local qyt__zonghuo = fk.CreateTriggerSkill{
   can_trigger = function(self, _, target, player, data)
     return target == player and player:hasSkill(self.name) and data.card.trueName == "slash" and data.card.name ~= "fire__slash"
   end,
-  on_use = function(_, _, _, _, data)
+  on_use = function(self, _, _, _, data)
     local card = Fk:cloneCard("fire__slash")
     card.skillName = self.name
     card:addSubcard(data.card)
@@ -443,7 +443,10 @@ Fk:loadTranslationTable{
   ["male"] = "男性",
   ["female"] = "女性",
 
+  ["$qyt__shaoying1"] = "烈焰升腾，万物尽毁！",
+  ["$qyt__shaoying2"] = "以火应敌，贼人何处逃窜？",
   ["$qyt__zonghuo"] = "（燃烧声）",
+  ["~qyt__luxun"] = "玩火自焚呐……",
 }
 
 Fk:loadTranslationTable{
