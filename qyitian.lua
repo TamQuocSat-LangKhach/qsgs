@@ -123,11 +123,12 @@ local qyt__jueji = fk.CreateActiveSkill{
   anim_type = "control",
   card_num = 0,
   target_num = 1,
-  prompt = "#qyt__jueji",
   can_use = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = Util.FalseFunc,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
   target_filter = function(self, to_select, selected, selected_cards)
     return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
   end,
@@ -140,9 +141,6 @@ local qyt__jueji = fk.CreateActiveSkill{
         if room:getCardArea(pindian.results[target.id].toCard) == Card.DiscardPile then
           room:delay(1000)
           room:obtainCard(player, pindian.results[target.id].toCard, true, fk.ReasonJustMove)
-        end
-        if not player.dead then
-          player:drawCards(1, self.name)
         end
         if player.dead or target.dead or player:isKongcheng() or target:isKongcheng() then
           break
@@ -165,8 +163,7 @@ zhangjunyi:addSkill(qyt__jueji)
 Fk:loadTranslationTable{
   ["qyt__zhanghe"] = "张儁乂",
   ["qyt__jueji"] = "绝汲",
-  [":qyt__jueji"] = "出牌阶段限一次，你可以与一名角色拼点：若你赢，你获得对方的拼点牌并摸一张牌，然后你可以重复此流程，直到你拼点没赢为止。",
-  ["#qyt__jueji"] = "绝汲：你可以拼点，若赢，你获得对方拼点牌并摸一张牌，然后可以重复此流程",
+  [":qyt__jueji"] = "出牌阶段限一次，你可以与一名角色拼点：若你赢，你获得对方的拼点牌，然后你可以重复此流程，直到你拼点没赢为止。",
   ["#qyt__jueji-invoke"] = "绝汲：你可以继续发动“绝汲”与 %dest 拼点",
 }
 
@@ -691,7 +688,9 @@ local qyt__taichen = fk.CreateActiveSkill{
   anim_type = "offensive",
   max_card_num = 1,
   target_num = 1,
-  can_use = Util.TrueFunc,
+  can_use = function(self, player)
+    return true
+  end,
   prompt = "#qyt__taichen",
   card_filter = function(self, to_select, selected)
     return Fk:getCardById(to_select).sub_type == Card.SubtypeWeapon

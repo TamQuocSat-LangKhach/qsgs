@@ -68,78 +68,6 @@ Fk:loadTranslationTable{
   [":qw__yuwen"] = "锁定技，当你死亡时，伤害来源改为自己。",
 }
 
-local simahui = General(extension, "qw__simahui", "qun", 4)
-local qw__shouye = fk.CreateActiveSkill{
-  name = "qw__shouye",
-  anim_type = "support",
-  card_num = 1,
-  min_target_num = 1,
-  max_target_num = 2,
-  prompt= "#qw__shouye",
-  can_use = function(self, player)
-    if not player:isKongcheng() then
-      if player:usedSkillTimes("qw__jiehuo", Player.HistoryPhase) > 0 then
-        return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
-      else
-        return true
-      end
-    end
-  end,
-  card_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:getCardById(to_select).color == Card.Red and
-      Fk:currentRoom():getCardArea(to_select) ~= Player.Equip and not Self:prohibitDiscard(Fk:getCardById(to_select))
-  end,
-  target_filter = function(self, to_select, selected)
-    return #selected < 2 and to_select ~= Self.id
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    room:throwCard(effect.cards, self.name, player, player)
-    for _, id in ipairs(effect.tos) do
-      local target = room:getPlayerById(id)
-      if not target.dead then
-        target:drawCards(1, self.name)
-        room:addPlayerMark(player, self.name, 1)
-      end
-    end
-  end,
-}
-local qw__jiehuo = fk.CreateTriggerSkill{
-  name = "qw__jiehuo",
-  frequency = Skill.Wake,
-  events = {fk.AfterSkillEffect},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.name == "qw__shouye"
-  end,
-  can_wake = function(self, event, target, player, data)
-    return player:getMark("qw__shouye") > 6
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:changeMaxHp(player, -1)
-    if not player.dead then
-      room:handleAddLoseSkills(player, "qw__jiehuo", nil, true, false)
-    end
-  end,
-}
-local qw__shien = fk.CreateTriggerSkill{
-  name = "qw__shien",
-  anim_type = "drawcard",
-  events = {fk.CardUsing},
-  can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target ~= player and data.card:isCommonTrick()
-  end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(target, self.name, nil, "#qw__shien-invoke:"..player.id)
-  end,
-  on_use = function(self, event, target, player, data)
-    player.room:doIndicate(target.id, {player.id})
-    player:drawCards(1, self.name)
-  end,
-}
-simahui:addSkill(qw__shouye)
-simahui:addSkill(qw__jiehuo)
-simahui:addRelatedSkill(qw__shien)
 Fk:loadTranslationTable{
   ["qw__simahui"] = "司马徽",
   ["qw__shouye"] = "授业",
@@ -148,8 +76,6 @@ Fk:loadTranslationTable{
   [":qw__jiehuo"] = "觉醒技，当你发动〖授业〗令其他角色摸牌不少于7张后，你减1点体力上限，获得技能〖师恩〗。",
   ["qw__shien"] = "师恩",
   [":qw__shien"] = "其他角色使用非延时锦囊时，可以令你摸一张牌。",
-  ["#qw__shouye"] = "授业：你可以弃置一张红色手牌，令至多两名其他角色各摸一张牌",
-  ["#qw__shien-invoke"] = "师恩：是否令 %src 摸一张牌？",
 }
 
 return extension
