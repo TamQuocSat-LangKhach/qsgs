@@ -342,7 +342,7 @@ local shenjun = fk.CreateTriggerSkill{
     if event == fk.EventPhaseStart then
       return player.phase == Player.Start
     else
-      return data.from and data.from.gender ~= player.gender and data.damageType ~= fk.ThunderDamage
+      return data.from and player:compareGenderWith(data.from, true) and data.damageType ~= fk.ThunderDamage
     end
   end,
   on_use = function(self, event, target, player, data)
