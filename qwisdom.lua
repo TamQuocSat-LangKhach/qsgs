@@ -50,18 +50,119 @@ Fk:loadTranslationTable{
   [":qw__jincui"] = "当你死亡时，可选择一名角色，令该角色摸三张牌或者弃置三张牌。",
 }
 
+local huaxiong = General(extension, "qw__huaxiong", "qun", 4)
+local qw__badao = fk.CreateTriggerSkill{
+  name = "qw__badao",
+  anim_type = "offensive",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and data.card.color == Card.Black
+  end,
+  on_cost = function (self, event, target, player, data)
+    local use = player.room:askForUseCard(player, "slash", "slash", "#qw__badao-use", true)
+    if use then
+      self.cost_data = use
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:useCard(self.cost_data)
+  end,
+}
+huaxiong:addSkill(qw__badao)
+local qw__wenjiu = fk.CreateTriggerSkill{
+  name = "qw__wenjiu",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.TargetConfirmed, fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and data.card.trueName == "slash" then
+      return data.card.color == (event == fk.TargetConfirmed and Card.Red or Card.Black)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    if event == fk.TargetConfirmed then
+      data.disresponsive = true
+      room:notifySkillInvoked(player, self.name, "negative")
+    else
+      data.additionalDamage = (data.additionalDamage or 0) + 1
+      room:notifySkillInvoked(player, self.name, "offensive")
+    end
+  end,
+}
+huaxiong:addSkill(qw__wenjiu)
 Fk:loadTranslationTable{
   ["qw__huaxiong"] = "华雄",
   ["qw__badao"] = "霸刀",
   [":qw__badao"] = "当你成为黑色的【杀】的目标后，你可以使用一张【杀】。",
+  ["#qw__badao-use"] = "霸刀：你可以使用一张【杀】",
   ["qw__wenjiu"] = "温酒",
   [":qw__wenjiu"] = "锁定技，你使用黑色【杀】造成伤害+1，你不能响应红色【杀】。",
 }
 
+local tianfeng = General(extension, "qw__tianfeng", "qun", 3)
+local qw__shipo = fk.CreateTriggerSkill{
+  name = "qw__shipo",
+  anim_type = "support",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and #target:getCardIds("j") > 0 and target.phase == Player.Judge and #player:getCardIds("he") > 1
+  end,
+  on_cost = function (self, event, target, player, data)
+    local card = player.room:askForDiscard(player, 2, 2, true, self.name, true, ".", "#qw__shipo-card::"..target.id, true)
+    if #card > 0 then
+      self.cost_data = card
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    local cards = target:getCardIds("j")
+    if #cards > 0 and not player.dead then
+      room:moveCards{
+        from = target.id,
+        ids = cards,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        proposer = player.id,
+        moveReason = fk.ReasonPrey,
+      }
+    end
+  end,
+}
+tianfeng:addSkill(qw__shipo)
+local qw__gushou = fk.CreateTriggerSkill{
+  name = "qw__gushou",
+  anim_type = "drawcard",
+  events = {fk.CardUsing, fk.CardResponding},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and player.phase == Player.NotActive and data.card.type == Card.TypeBasic
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+}
+tianfeng:addSkill(qw__gushou)
+local qw__yuwen = fk.CreateTriggerSkill{
+  name = "qw__yuwen",
+  frequency = Skill.Compulsory,
+  events = {fk.BeforeGameOverJudge},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self,false,true) and target == player and data.damage
+  end,
+  on_use = function(self, event, target, player, data)
+    data.damage.from = player
+  end,
+}
+tianfeng:addSkill(qw__yuwen)
 Fk:loadTranslationTable{
   ["qw__tianfeng"] = "田丰",
-  ["qw__badao"] = "识破",
-  [":qw__badao"] = "一名角色判定阶段开始时，你可以弃置两张牌，获得其判定区内的所有牌。",
+  ["qw__shipo"] = "识破",
+  [":qw__shipo"] = "一名角色判定阶段开始时，你可以弃置两张牌，获得其判定区内的所有牌。",
+  ["#qw__shipo-card"] = "识破：你可以弃置两张牌，获得 %dest 判定区内的所有牌",
   ["qw__gushou"] = "固守",
   [":qw__gushou"] = "当你于回合外使用或打出一张基本牌时，你可以摸一张牌。",
   ["qw__yuwen"] = "狱刎",
