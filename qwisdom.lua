@@ -32,12 +32,93 @@ Fk:loadTranslationTable{
   [":qw__chouliang"] = "结束阶段，若你手牌少于三张，你可以亮出牌堆顶4-X张牌（X为你的手牌数），你获得其中的基本牌，将其余牌置入弃牌堆。",
 }
 
+local sunce = General(extension, "qw__sunce", "wu", 4)
+local qw__bawang = fk.CreateTriggerSkill{
+  name = "qw__bawang",
+  anim_type = "offensive",
+  events = {fk.CardEffectCancelledOut},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and data.card.trueName == "slash" then
+      local to = player.room:getPlayerById(data.to)
+      return player:canPindian(to)
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#qw__bawang-invoke:"..data.to)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = player.room:getPlayerById(data.to)
+    local pindian = player:pindian({to}, self.name)
+    local winner = pindian.results[to.id].winner
+    if winner and winner == player and not player.dead and not player:prohibitUse(Fk:cloneCard("slash")) then
+      local targets = table.filter(room:getOtherPlayers(player), function (p) return not player:isProhibited(p, Fk:cloneCard("slash"))  end)
+      if #targets == 0 then return false end
+      local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 2, "#qw__bawang-slash", self.name, true)
+      if #tos > 0 then
+        room:useVirtualCard("slash", nil, player, table.map(tos, Util.Id2PlayerMapper), self.name, true)
+      end
+    end
+  end,
+}
+sunce:addSkill(qw__bawang)
+local qw__weidai = fk.CreateViewAsSkill{
+  name = "qw__weidai$",
+  anim_type = "offensive",
+  pattern = "analeptic",
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    if #cards ~= 0 then return nil end
+    local c = Fk:cloneCard("analeptic")
+    c.skillName = self.name
+    return c
+  end,
+  before_use = function(self, player, use)
+    local room = player.room
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if p.kingdom == "wu" then
+        local cards = room:askForCard(p, 1, 1, false, self.name, true, ".|2~9|spade", "#qw__weidai-ask:"..player.id)
+        if #cards > 0 then
+          room:moveCards({
+            from = p.id,
+            ids = cards,
+            toArea = Card.DiscardPile,
+            moveReason = fk.ReasonPutIntoDiscardPile,
+          })
+          room:doIndicate(p.id, {player.id})
+          local to_use = Fk:cloneCard("analeptic")
+          to_use:addSubcards(cards)
+          to_use.skillName = self.name
+          use.card = to_use
+          return
+        end
+      end
+    end
+    room:setPlayerMark(player, "qw__weidai-failed-phase", 1)
+    return self.name
+  end,
+  enabled_at_play = function(self, player)
+    return player:getMark("qw__weidai-failed-phase") == 0 and player:canUse(Fk:cloneCard("analeptic"))
+    and table.find(Fk:currentRoom().alive_players, function(p)
+      return p ~= player and p.kingdom == "wu"
+    end)
+  end,
+  enabled_at_response = function(self, player)
+    return table.find(Fk:currentRoom().alive_players, function(p)
+      return p ~= player and p.kingdom == "wu"
+    end)
+  end,
+}
+sunce:addSkill(qw__weidai)
 Fk:loadTranslationTable{
   ["qw__sunce"] = "孙策",
   ["qw__bawang"] = "霸王",
-  [":qw__bawang"] = "当你使用【杀】被【闪】抵消时，你可以与目标角色拼点：若你赢，可以视为你对至多两名角色各使用一张不计入次数的【杀】。",
+  [":qw__bawang"] = "当你使用【杀】被【闪】抵消时，你可以与目标角色拼点：若你赢，可以视为对至多两名角色使用一张不计入次数的【杀】。",
+  ["#qw__bawang-invoke"] = "霸王：你可以与 %src 拼点，若你赢，你可视为你对至多两名角色使用【杀】",
+  ["#qw__bawang-slash"] = "霸王：可以视为对至多两名角色使用【杀】",
   ["qw__weidai"] = "危殆",
-  [":qw__weidai"] = "主公技，当你需要使用一张【酒】时，你可以令其他吴势力角色将一张♠2~9的手牌置入弃牌堆，你将此牌当【酒】使用。",
+  [":qw__weidai"] = "主公技，当你需要使用一张【酒】时，你可以令其他吴势力角色选择是否将一张♠2~9的手牌置入弃牌堆，若其如此做，你将此牌当【酒】使用。",
+  ["#qw__weidai-ask"] = "危殆：你可以展示一张♠2~9的手牌，令 %src 将之当【酒】使用",
 }
 
 local zhangzhao = General(extension, "qw__zhangzhao", "wu", 3)
