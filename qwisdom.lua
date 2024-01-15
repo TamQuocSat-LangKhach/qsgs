@@ -40,14 +40,141 @@ Fk:loadTranslationTable{
   [":qw__weidai"] = "主公技，当你需要使用一张【酒】时，你可以令其他吴势力角色将一张♠2~9的手牌置入弃牌堆，你将此牌当【酒】使用。",
 }
 
+local zhangzhao = General(extension, "qw__zhangzhao", "wu", 3)
+local qw__longluo = fk.CreateTriggerSkill{
+  name = "qw__longluo",
+  anim_type = "support",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and player.phase == Player.Finish and #player.room.alive_players > 1 then
+      local room = player.room
+      local n = 0
+      local phase_ids = {}
+      room.logic:getEventsOfScope(GameEvent.Phase, 1, function (e)
+        if e.data[2] == Player.Discard then
+          table.insert(phase_ids, {e.id, e.end_id})
+        end
+        return false
+      end, Player.HistoryTurn)
+      room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
+        local in_discard = false
+        for _, ids in ipairs(phase_ids) do
+          if #ids == 2 and e.id > ids[1] and e.id < ids[2] then
+            in_discard = true
+            break
+          end
+        end
+        if in_discard then
+          for _, move in ipairs(e.data) do
+            if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+              for _, info in ipairs(move.moveInfo) do
+                if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+                  n = n + 1
+                end
+              end
+            end
+          end
+        end
+        return false
+      end, Player.HistoryTurn)
+      if n > 0 then
+        self.cost_data = n
+        return true
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local n = self.cost_data
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#qw__longluo-choose:::"..n, self.name, true)
+    if #tos > 0 then
+      self.cost_data = {tos[1], n}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data[1])
+    to:drawCards(self.cost_data[2], self.name)
+  end,
+}
+zhangzhao:addSkill(qw__longluo)
+local qw__fuzuo = fk.CreateTriggerSkill{
+  name = "qw__fuzuo",
+  anim_type = "control",
+  events = {fk.PindianCardsDisplayed},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and not player:isKongcheng() and data.from ~= player
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local targets = table.simpleClone(data.tos)
+    table.insert(targets, data.from)
+    local ids = table.filter(player:getCardIds("h"), function(id)
+      local c = Fk:getCardById(id)
+      return not player:prohibitDiscard(c) and c.number < 8
+    end)
+    local tos, cards = room:askForChooseCardsAndPlayers(player, 1, 1, table.map(targets, Util.IdMapper), 1, 1, tostring(Exppattern{ id = ids }), "#qw__fuzuo-card", self.name, true, true)
+    if tos and cards then
+      self.cost_data = {tos[1], cards[1]}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cardId = self.cost_data[2]
+    room:throwCard(cardId, self.name, player, player)
+    local number = Fk:getCardById(cardId).number
+    local toId = self.cost_data[1]
+    if toId == data.from.id then
+      data.fromCard.number = math.min(13, data.fromCard.number + number)
+    else
+      data.results[toId].toCard.number = math.min(13, data.results[toId].toCard.number + number)
+    end
+  end,
+}
+zhangzhao:addSkill(qw__fuzuo)
+local qw__jincui = fk.CreateTriggerSkill{
+  name = "qw__jincui",
+  anim_type = "support",
+  events = {fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, false, true)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local p = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1, "#qw__jincui-choose", self.name, true)
+    if #p > 0 then
+      self.cost_data = p[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local choices = {"draw3"}
+    if not to:isNude() then table.insert(choices, "discard3") end
+    local choice = room:askForChoice(player, choices, self.name)
+    if choice == "draw3" then
+      to:drawCards(3, self.name)
+    else
+      room:askForDiscard(to, 3, 3, true, self.name, false)
+    end
+  end,
+}
+zhangzhao:addSkill(qw__jincui)
 Fk:loadTranslationTable{
   ["qw__zhangzhao"] = "张昭",
   ["qw__longluo"] = "笼络",
-  [":qw__longluo"] = "结束阶段，你可以令一名其他角色摸你于本回合弃牌阶段弃置牌数的牌。",
+  [":qw__longluo"] = "结束阶段，你可以令一名其他角色摸数量等于你于本回合弃牌阶段弃置牌数的牌。",
+  ["#qw__longluo-choose"] = "笼络：你可以令一名其他角色摸 %arg 张牌",
   ["qw__fuzuo"] = "辅佐",
-  [":qw__fuzuo"] = "当其他角色拼点时，你可以弃置一张点数小于8的手牌，令其中一名角色拼点牌的点数加上这张牌点数的一半（向下取整）。",
+  [":qw__fuzuo"] = "当其他角色发起的拼点亮出拼点牌时，你可以弃置一张点数小于8的手牌，令其中一名角色的拼点牌点数加上你弃置的牌的点数（至多加到13）。",
+  ["#qw__fuzuo-card"] = "辅佐：可以弃置一张点数小于8的手牌，令一名参与拼点角色的点数增加",
   ["qw__jincui"] = "尽瘁",
-  [":qw__jincui"] = "当你死亡时，可选择一名角色，令该角色摸三张牌或者弃置三张牌。",
+  [":qw__jincui"] = "当你死亡时，可选择一名其他角色，令该角色摸三张牌或者弃置三张牌。",
+  ["#qw__jincui-choose"] = "尽瘁：可以令一名其他角色摸三张牌或者弃置三张牌",
+  ["discard3"] = "弃置三张牌",
+  ["draw3"] = "摸三张牌",
 }
 
 local huaxiong = General(extension, "qw__huaxiong", "qun", 4)
