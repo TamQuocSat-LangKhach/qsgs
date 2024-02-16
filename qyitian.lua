@@ -550,7 +550,7 @@ local qyt__toudu = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and not player.faceup and not player:isKongcheng()
+    return target == player and player:hasSkill(self) and not player.faceup and not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
     local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#qyt__toudu-invoke", true)
