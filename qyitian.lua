@@ -532,7 +532,8 @@ local qyt__zhenggong = fk.CreateTriggerSkill{
   anim_type = "special",
   events = {fk.BeforeTurnStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target ~= player and player.faceup
+    return player:hasSkill(self) and target ~= player and
+      not target:insideExtraTurn() and player.faceup
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#qyt__zhenggong-invoke::"..target.id)
@@ -605,7 +606,7 @@ dengshizai:addSkill(qyt__toudu)
 Fk:loadTranslationTable{
   ["qyt__dengai"] = "邓士载",
   ["qyt__zhenggong"] = "争功",
-  [":qyt__zhenggong"] = "其他角色回合开始前，若你的武将牌正面朝上，你可以获得一个额外的回合，此回合结束后，你将武将牌翻面。",
+  [":qyt__zhenggong"] = "其他角色的额定回合开始前，若你的武将牌正面朝上，你可以获得一个额外的回合，此回合结束后，你将武将牌翻面。",
   ["qyt__toudu"] = "偷渡",
   [":qyt__toudu"] = "当你受到伤害后，若你的武将牌背面朝上，你可以弃置一张牌并翻面，然后视为使用一张无距离限制的【杀】。",
   ["#qyt__zhenggong-invoke"] = "争功：%dest 的回合即将开始，你可以发动“争功”抢先执行一个回合！",
