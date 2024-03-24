@@ -328,7 +328,7 @@ Fk:loadTranslationTable{
   ["~qyt__caiwenji"] = "人生几何时，怀忧终年岁……",
 }
 
-local luboyan = General(extension, "qyt__luxun", "wu", 3, 3, General.Bigender)
+local luboyan = General(extension, "qyt__luxun", "wu", 3)
 
 local shenjun = fk.CreateTriggerSkill{
   name = "qyt__lbyshenjun",
