@@ -6,10 +6,87 @@ Fk:loadTranslationTable{
   ["qyt"] = "倚天",
 }
 
+local godcaocao = General(extension, "qyt__godcaocao", "god", 3)
+godcaocao:addSkill("feiying")
+
+---@param room Room
+local function mkGuixinTable(room)
+  -- local lords = Fk.lords
+  local tag = {}
+  for _, g in ipairs(Fk:getAllGenerals()) do
+    -- 假设一个武将只有一个主公技
+    --local same_g = Fk:getSameGenerals(g1)
+    --for _, g in ipairs(same_g) do
+      local lord_skill = table.find(g.skills, function(s)
+        return s.lordSkill
+      end)
+      if lord_skill then
+        table.insert(tag, { g.name, lord_skill })
+      end
+    --end
+  end
+  room:setTag("qyt_guixin_table", tag)
+end
+
+local guixin = fk.CreateTriggerSkill{
+  name = "qyt__guixin",
+  events = {fk.EventPhaseStart, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      return event == fk.Damaged and true or player.phase == Player.Finish
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local choice = room:askForChoice(player, { "qyt-change-kingdom",
+      "qyt-add-lord-skill", "Cancel" }, self.name)
+    if choice ~= "Cancel" then
+      self.cost_data = choice
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if self.cost_data == "qyt-change-kingdom" then
+      local p = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper),
+        1, 1, "#qyt__guixin-kingdom", self.name, false)[1]
+      local victim = room:getPlayerById(p)
+      local kingdoms = table.simpleClone(Fk.kingdoms)
+      table.removeOne(kingdoms, victim.kingdom)
+      local choice = room:askForChoice(player, kingdoms, self.name, nil, false, Fk.kingdoms)
+      room:changeKingdom(victim, choice, true)
+    elseif self.cost_data == "qyt-add-lord-skill" then
+      if not room:getTag("qyt_guixin_table") then
+        mkGuixinTable(room)
+      end
+      local tab = room:getTag("qyt_guixin_table")
+      local skills, generals = {}, {}
+      for _, v in ipairs(tab) do
+        if not table.find(room.alive_players, function(p)
+          return p:hasSkill(v[2])
+        end) then
+          table.insert(skills, v[2].name)
+          table.insert(generals, v[1])
+        end
+      end
+      local result = room:askForCustomDialog(player, self.name,
+      "packages/utility/qml/ChooseSkillBox.qml", {
+        skills, 1, 1, "#qyt__guixin-choice", generals,
+      })
+      result = json.decode(result)
+      room:handleAddLoseSkills(player, table.concat(result, "|"), nil)
+    end
+  end,
+}
+godcaocao:addSkill(guixin)
 Fk:loadTranslationTable{
   ["qyt__godcaocao"] = "魏武帝",
   ["qyt__guixin"] = "归心",
-  [":qyt__guixin"] = "结束阶段开始时，你可以选择一项：1.改变一名其他角色的势力；2.获得一个未加入游戏的武将牌上的主公技。",
+  [":qyt__guixin"] = "结束阶段开始时或你受到伤害后，你可以选择一项：1.改变一名角色的势力；2.获得一个未加入游戏的主公技。",
+  ["qyt-change-kingdom"] = "改变一名角色的势力",
+  ["qyt-add-lord-skill"] = "获得一个未加入游戏的主公技",
+  ["#qyt__guixin-choice"] = "归心：选择一个主公技获得，窗口可拖动",
+  ["#qyt__guixin-kingdom"] = "归心：选择一名角色，改变其势力",
 }
 
 local caochong = General(extension, "qyt__caochong", "wei", 3)
