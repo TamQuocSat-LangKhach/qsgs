@@ -69,11 +69,16 @@ local guixin = fk.CreateTriggerSkill{
           table.insert(generals, v[1])
         end
       end
+      if #skills == 0 then return end --FIXME
       local result = room:askForCustomDialog(player, self.name,
       "packages/utility/qml/ChooseSkillBox.qml", {
         skills, 1, 1, "#qyt__guixin-choice", generals,
       })
-      result = json.decode(result)
+      if result == "" then
+        result = { skills[1] }
+      else
+        result = json.decode(result)
+      end
       room:handleAddLoseSkills(player, table.concat(result, "|"), nil)
     end
   end,
