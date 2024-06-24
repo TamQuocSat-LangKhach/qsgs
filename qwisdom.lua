@@ -4,7 +4,7 @@ extension.extensionName = "qsgs"
 local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
-  ["qwisdom"] = "智包",
+  ["qwisdom"] = "神杀-智包",
   ["qw"] = "智",
 }
 
@@ -100,6 +100,10 @@ local qw__shicai = fk.CreateTriggerSkill{
 xuyou:addSkill(qw__shicai)
 Fk:loadTranslationTable{
   ["qw__xuyou"] = "许攸",
+  ["#qw__xuyou"] = "恃才傲物",
+  ["designer:qw__xuyou"] = "太阳神三国杀",
+  ["illustrator:qw__xuyou"] = "三国志大战",
+
   ["qw__juao"] = "倨傲",
   [":qw__juao"] = "出牌阶段限一次，你可以将至少一张手牌扣置于一名角色的武将牌旁，其下个摸牌阶段摸牌时获得这些牌，且其本阶段的摸牌数减少等量张。",
   ["#qw__juao_delay"] = "倨傲",
@@ -165,6 +169,10 @@ local qw__beifa = fk.CreateTriggerSkill{
 jiangwei:addSkill(qw__beifa)
 Fk:loadTranslationTable{
   ["qw__jiangwei"] = "姜维",
+  ["#qw__jiangwei"] = "天水麒麟",
+  ["designer:qw__jiangwei"] = "太阳神三国杀",
+  ["illustrator:qw__jiangwei"] = "巴萨小马",
+
   ["qw__yicai"] = "异才",
   [":qw__yicai"] = "当你使用普通锦囊牌结算结束后，你可以使用一张不计入次数的【杀】。",
   ["#qw__yicai-slash"] = "异才：你可以使用一张【杀】",
@@ -244,6 +252,10 @@ local qw__chouliang = fk.CreateTriggerSkill{
 jiangwan:addSkill(qw__chouliang)
 Fk:loadTranslationTable{
   ["qw__jiangwan"] = "蒋琬",
+  ["#qw__jiangwan"] = "武侯后继",
+  ["designer:qw__jiangwan"] = "太阳神三国杀",
+  ["illustrator:qw__jiangwan"] = "Zero",
+
   ["qw__houyuan"] = "后援",
   [":qw__houyuan"] = "出牌阶段限一次，你可以弃置两张牌并令一名其他角色摸两张牌。",
   ["qw__chouliang"] = "筹粮",
@@ -331,6 +343,10 @@ local qw__weidai = fk.CreateViewAsSkill{
 sunce:addSkill(qw__weidai)
 Fk:loadTranslationTable{
   ["qw__sunce"] = "孙策",
+  ["#qw__sunce"] = "江东的小霸王",
+  ["designer:qw__sunce"] = "太阳神三国杀",
+  ["illustrator:qw__sunce"] = "永恒之轮",
+
   ["qw__bawang"] = "霸王",
   [":qw__bawang"] = "当你使用【杀】被【闪】抵消时，你可以与目标角色拼点：若你赢，可以视为对至多两名角色使用一张不计入次数的【杀】。",
   ["#qw__bawang-invoke"] = "霸王：你可以与 %src 拼点，若你赢，你可视为你对至多两名角色使用【杀】",
@@ -464,6 +480,10 @@ local qw__jincui = fk.CreateTriggerSkill{
 zhangzhao:addSkill(qw__jincui)
 Fk:loadTranslationTable{
   ["qw__zhangzhao"] = "张昭",
+  ["#qw__zhangzhao"] = "东吴重臣",
+  ["designer:qw__zhangzhao"] = "太阳神三国杀",
+  ["illustrator:qw__zhangzhao"] = "三国志大战",
+
   ["qw__longluo"] = "笼络",
   [":qw__longluo"] = "结束阶段，你可以令一名其他角色摸数量等于你于本回合弃牌阶段弃置牌数的牌。",
   ["#qw__longluo-choose"] = "笼络：你可以令一名其他角色摸 %arg 张牌",
@@ -522,6 +542,10 @@ local qw__wenjiu = fk.CreateTriggerSkill{
 huaxiong:addSkill(qw__wenjiu)
 Fk:loadTranslationTable{
   ["qw__huaxiong"] = "华雄",
+  ["#qw__huaxiong"] = "心高命薄",
+  ["designer:qw__huaxiong"] = "太阳神三国杀",
+  ["illustrator:qw__huaxiong"] = "三国志大战",
+
   ["qw__badao"] = "霸刀",
   [":qw__badao"] = "当你成为黑色的【杀】的目标后，你可以使用一张【杀】。",
   ["#qw__badao-use"] = "霸刀：你可以使用一张【杀】",
@@ -587,6 +611,10 @@ local qw__yuwen = fk.CreateTriggerSkill{
 tianfeng:addSkill(qw__yuwen)
 Fk:loadTranslationTable{
   ["qw__tianfeng"] = "田丰",
+  ["#qw__tianfeng"] = "甘冒虎口",
+  ["designer:qw__tianfeng"] = "太阳神三国杀",
+  ["illustrator:qw__tianfeng"] = "小矮米",
+
   ["qw__shipo"] = "识破",
   [":qw__shipo"] = "一名角色判定阶段开始时，你可以弃置两张牌，获得其判定区内的所有牌。",
   ["#qw__shipo-card"] = "识破：你可以弃置两张牌，获得 %dest 判定区内的所有牌",
@@ -671,6 +699,10 @@ simahui:addSkill(qw__jiehuo)
 simahui:addRelatedSkill(qw__shien)
 Fk:loadTranslationTable{
   ["qw__simahui"] = "司马徽",
+  ["#qw__simahui"] = "水镜先生",
+  ["designer:qw__simahui"] = "太阳神三国杀",
+  ["illustrator:qw__simahui"] = "小仓",
+
   ["qw__shouye"] = "授业",
   [":qw__shouye"] = "出牌阶段，你可以弃置一张红色手牌，令至多两名其他角色各摸一张牌。若你发动过〖解惑〗，此技能每阶段限一次。",
   ["qw__jiehuo"] = "解惑",

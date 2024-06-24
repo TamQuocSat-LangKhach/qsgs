@@ -1,8 +1,10 @@
 local extension = Package("qyitian")
 extension.extensionName = "qsgs"
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
-  ["qyitian"] = "倚天",
+  ["qyitian"] = "神杀-倚天",
   ["qyt"] = "倚天",
 }
 
@@ -86,6 +88,11 @@ local guixin = fk.CreateTriggerSkill{
 godcaocao:addSkill(guixin)
 Fk:loadTranslationTable{
   ["qyt__godcaocao"] = "魏武帝",
+  ["#qyt__godcaocao"] = "超世之英杰",
+  --["designer:qyt__godcaocao"] = "韩旭",  好像确实是韩旭
+  ["illustrator:qyt__godcaocao"] = "狮子猿",
+  --["cv:qyt__godcaocao"] = "倚天の剑",  驾六龙，乘风而行……
+
   ["qyt__guixin"] = "归心",
   [":qyt__guixin"] = "结束阶段开始时或你受到伤害后，你可以选择一项：1.改变一名角色的势力；2.获得一个未加入游戏的主公技。",
   ["qyt-change-kingdom"] = "改变一名角色的势力",
@@ -188,6 +195,11 @@ caochong:addSkill(qyt__conghui)
 caochong:addSkill(qyt__zaoyao)
 Fk:loadTranslationTable{
   ["qyt__caochong"] = "曹冲",
+  ["#qyt__caochong"] = "早夭的神童",
+  --["designer:qyt__caochong"] = "",
+  --["illustrator:qyt__caochong"] = "",
+  --["cv:qyt__caochong"] = "",
+
   ["qyt__chengxiang"] = "称象",
   [":qyt__chengxiang"] = "当你受到伤害后，你可以弃置任意张点数之和与造成伤害的牌的点数相等的牌并选择至多等量的角色，若这些角色："..
   "已受伤，回复1点体力；未受伤，摸两张牌。",
@@ -246,6 +258,11 @@ local qyt__jueji = fk.CreateActiveSkill{
 zhangjunyi:addSkill(qyt__jueji)
 Fk:loadTranslationTable{
   ["qyt__zhanghe"] = "张儁乂",
+  ["#qyt__zhanghe"] = "计谋巧变",
+  ["designer:qyt__zhanghe"] = "孔孟老庄胡",
+  ["illustrator:qyt__zhanghe"] = "《火凤燎原》",
+  --["cv:qyt__zhanghe"] = "",
+
   ["qyt__jueji"] = "绝汲",
   [":qyt__jueji"] = "出牌阶段限一次，你可以与一名角色拼点：若你赢，你获得对方的拼点牌并摸一张牌，然后你可以重复此流程，直到你拼点没赢为止。",
   ["#qyt__jueji"] = "绝汲：你可以拼点，若赢，你获得对方拼点牌并摸一张牌，然后可以重复此流程",
@@ -302,6 +319,11 @@ lukang:addSkill(qyt__kegou)
 lukang:addRelatedSkill("lianying")
 Fk:loadTranslationTable{
   ["qyt__lukang"] = "陆抗",
+  ["#qyt__lukang"] = "最后的良将",
+  ["designer:qyt__lukang"] = "太阳神上",
+  ["illustrator:qyt__lukang"] = "火神原画",
+  --["cv:qyt__lukang"] = "喵小林",
+
   ["qyt__weiyan"] = "围堰",
   [":qyt__weiyan"] = "你可以将摸牌阶段改为出牌阶段，将出牌阶段改为摸牌阶段。",
   ["qyt__kegou"] = "克构",
@@ -311,6 +333,11 @@ Fk:loadTranslationTable{
 
 Fk:loadTranslationTable{
   ["qyt__godsimayi"] = "晋宣帝",
+  ["#qyt__godsimayi"] = "祁山的术士",
+  ["designer:qyt__godsimayi"] = "tle2009，塞克洛",
+  ["illustrator:qyt__godsimayi"] = "梦三国",
+  ["cv:qyt__godsimayi"] = "宇文天启",
+
   ["qyt__wuling"] = "五灵",
   [":qyt__wuling"] = "准备阶段开始时，你可以选择一种与上回合不同的效果，对所有角色生效直到你下回合开始，你选择的五灵效果不可与上回合重复："..
   "[风]一名角色受到火属性伤害时，此伤害+1。"..
@@ -320,14 +347,258 @@ Fk:loadTranslationTable{
   "[土]一名角色受到的属性伤害大于1时，防止多余的伤害。",
 }
 
+local xiahoujuan = General(extension, "qyt__xiahoushi", "wei", 3, 3, General.Female)
+local qyt__lianli = fk.CreateTriggerSkill{
+  name = "qyt__lianli",
+  anim_type = "support",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start and
+      table.find(player.room.alive_players, function(p)
+        return p.gender == General.Male
+      end)
+  end,
+  on_trigger = function(self, event, target, player, data)
+    self.cancel_cost = false
+    self:doCost(event, target, player, data)
+    if self.cancel_cost and player:hasSkill("qyt__liqian") and player.kingdom ~= "wei" then  --耦！
+      Fk.skills["qyt__liqian"]:doCost(event, target, player, data)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local targets = table.filter(player.room.alive_players, function(p)
+      return p.gender == General.Male
+    end)
+    local to = player.room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1,
+      "#qyt__lianli-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+    self.cancel_cost = true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local mark = U.getMark(player, "@@qyt__lianli_from")
+    table.insertIfNeed(mark, to.id)
+    room:setPlayerMark(player, "@@qyt__lianli_from", mark)
+    mark = U.getMark(to, "@@qyt__lianli_to")
+    table.insertIfNeed(mark, player.id)
+    room:setPlayerMark(to, "@@qyt__lianli_to", mark)
+    room:handleAddLoseSkills(to, "qyt__lianli_slash&", nil, false, true)
+  end,
+
+  refresh_events = {fk.TurnStart, fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
+    if target == player then
+      if event == fk.TurnStart then
+        return player:getMark("@@qyt__lianli_from") ~= 0
+      else
+        return table.find(player.room.alive_players, function(p)
+          return table.contains(U.getMark(p, "@@qyt__lianli_to"), player.id)
+        end)
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@@qyt__lianli_from", 0)
+    for _, p in ipairs(room.alive_players) do
+      local mark2 = U.getMark(p, "@@qyt__lianli_to")
+      if table.contains(mark2, player.id) then
+        table.removeOne(mark2, player.id)
+        if #mark2 == 0 then
+          mark2 = 0
+        end
+        room:setPlayerMark(p, "@@qyt__lianli_to", mark2)
+        if mark2 == 0 then
+          room:handleAddLoseSkills(p, "-qyt__lianli_slash&", nil, false, true)
+        end
+      end
+    end
+  end,
+}
+local qyt__lianli_delay = fk.CreateTriggerSkill{
+  name = "#qyt__lianli_delay",
+  mute = true,
+  events = {fk.AskForCardUse, fk.AskForCardResponse},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and
+      (data.cardName == "jink" or (data.pattern and Exppattern:Parse(data.pattern):matchExp("jink|0|nosuit|none"))) and
+      (data.extraData == nil or data.extraData.qyt__lianli_ask == nil) and
+      table.find(player.room.alive_players, function(p)
+        return table.contains(U.getMark(p, "@@qyt__lianli_to"), player.id)
+      end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, "qyt__lianli", nil, "#qyt__lianli_jink")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if p:isAlive() and table.contains(U.getMark(player, "@@qyt__lianli_from"), p.id) then
+        local cardResponded = room:askForResponse(p, "jink", "jink", "#qyt__lianli_delay-ask:"..player.id, true, {qyt__lianli_ask = true})
+        if cardResponded then
+          room:responseCard({
+            from = p.id,
+            card = cardResponded,
+            skipDrop = true,
+          })
+
+          if event == fk.AskForCardUse then
+            data.result = {
+              from = player.id,
+              card = Fk:cloneCard("jink"),
+            }
+            data.result.card:addSubcards(room:getSubcardsByRule(cardResponded, { Card.Processing }))
+            data.result.card.skillName = self.name
+
+            if data.eventData then
+              data.result.toCard = data.eventData.toCard
+              data.result.responseToEvent = data.eventData.responseToEvent
+            end
+          else
+            data.result = Fk:cloneCard("jink")
+            data.result:addSubcards(room:getSubcardsByRule(cardResponded, { Card.Processing }))
+            data.result.skillName = self.name
+          end
+          return true
+        end
+      end
+    end
+  end,
+}
+local qyt__lianli_slash = fk.CreateViewAsSkill{
+  name = "qyt__lianli_slash&",
+  anim_type = "offensive",
+  pattern = "slash",
+  prompt = "#qyt__lianli_slash",
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    if #cards ~= 0 then
+      return nil
+    end
+    local c = Fk:cloneCard("slash")
+    c.skillName = self.name
+    return c
+  end,
+  before_use = function(self, player, use)
+    local room = player.room
+    if use.tos then
+      room:doIndicate(player.id, TargetGroup:getRealTargets(use.tos))
+    end
+
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if table.contains(U.getMark(player, "@@qyt__lianli_to"), p.id) then
+        local cardResponded = room:askForResponse(p, "slash", "slash", "#qyt__lianli_slash-ask:"..player.id, true)
+        if cardResponded then
+          room:responseCard({
+            from = p.id,
+            card = cardResponded,
+            skipDrop = true,
+          })
+          use.card = cardResponded
+          return
+        end
+      end
+    end
+
+    room:setPlayerMark(player, "qyt__lianli_slash-failed-phase", 1)
+    return self.name
+  end,
+  enabled_at_play = function(self, player)
+    return player:getMark("qyt__lianli_slash-failed-phase") == 0 and player:getMark("@@qyt__lianli_to") ~= 0
+  end,
+  enabled_at_response = function(self, player)
+    return player:getMark("@@qyt__lianli_to") ~= 0
+  end,
+}
+local qyt__tongxin = fk.CreateTriggerSkill{
+  name = "qyt__tongxin",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and (target:getMark("@@qyt__lianli_from") ~= 0 or target:getMark("@@qyt__lianli_to") ~= 0)
+  end,
+  on_trigger = function(self, event, target, player, data)
+    self.cancel_cost = false
+    for i = 1, data.damage do
+      if i > 1 and (self.cancel_cost or not player:hasSkill(self)) then break end
+      self:doCost(event, target, player, data)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if player.room:askForSkillInvoke(player, self.name, nil, "#qyt__tongxin-invoke") then
+      return true
+    end
+    self.cancel_cost = true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room:getAlivePlayers()) do
+      if not p.dead and (p:getMark("@@qyt__lianli_from") ~= 0 or p:getMark("@@qyt__lianli_to") ~= 0) then
+        room:doIndicate(player.id, {p.id})
+        p:drawCards(1, self.name)
+      end
+    end
+  end,
+}
+local qyt__liqian = fk.CreateTriggerSkill{
+  name = "qyt__liqian",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterSkillEffect, fk.AfterPropertyChange},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and player:hasSkill("qyt__lianli", true) then
+      if event == fk.AfterSkillEffect and data == qyt__lianli then
+        local mark = U.getMark(player, "@@qyt__lianli_from")
+        return player.kingdom ~= player.room:getPlayerById(mark[#mark]).kingdom
+      elseif event == fk.AfterPropertyChange then
+        return target.kingdom ~= player.kingdom and table.contains(U.getMark(player, "@@qyt__lianli_from"), target.id)
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterSkillEffect or event == fk.AfterPropertyChange then
+      local mark = U.getMark(player, "@@qyt__lianli_from")
+      local to = room:getPlayerById(mark[#mark])
+      room:changeKingdom(player, to.kingdom, true)
+    else
+      room:changeKingdom(player, "wei", true)
+    end
+  end,
+}
+qyt__lianli:addRelatedSkill(qyt__lianli_delay)
+Fk:addSkill(qyt__lianli_slash)
+xiahoujuan:addSkill(qyt__lianli)
+xiahoujuan:addSkill(qyt__tongxin)
+xiahoujuan:addSkill(qyt__liqian)
 Fk:loadTranslationTable{
   ["qyt__xiahoushi"] = "夏侯涓",
+  ["#qyt__xiahoushi"] = "樵采的美人",
+  ["designer:qyt__xiahoushi"] = "宇文天启，艾艾艾",
+  ["illustrator:qyt__xiahoushi"] = "三国志大战",
+  ["cv:qyt__xiahoushi"] = "妙妙",
+
   ["qyt__lianli"] = "连理",
-  [":qyt__lianli"] = "准备阶段开始时，你可以选择一名男性角色，你与其进入“连理”状态直到你下回合开始：其可以替你使用或打出【闪】，你可以替其使用或打出【杀】。",
+  [":qyt__lianli"] = "准备阶段开始时，你可以选择一名男性角色，你与其进入连理状态直到你下回合开始：其可以替你使用或打出【闪】，"..
+  "你可以替其使用或打出【杀】。",
   ["qyt__tongxin"] = "同心",
-  [":qyt__tongxin"] = "当一名处于“连理”状态的角色受到1点伤害后，你可以令处于“连理”状态的角色各摸一张牌。",
+  [":qyt__tongxin"] = "当一名处于连理状态的角色受到1点伤害后，你可以令处于连理状态的角色各摸一张牌。",
   ["qyt__liqian"] = "离迁",
   [":qyt__liqian"] = "锁定技，若你处于连理状态，势力与连理对象的势力相同；当你处于未连理状态时，势力为魏。",
+  ["qyt__lianli_slash&"] = "连理",
+  [":qyt__lianli_slash&"] = "连理角色可以替你使用或打出【杀】。",
+  ["#qyt__lianli-choose"] = "连理：选择一名男性角色，你与其进入连理状态",
+  ["@@qyt__lianli_from"] = "连理",
+  ["@@qyt__lianli_to"] = "连理",
+  ["#qyt__lianli_slash-ask"] = "连理：是否替 %src 使用或打出【杀】？",
+  ["#qyt__lianli_slash"] = "连理：是否令连理角色替你使用或打出【杀】？",
+  ["#qyt__lianli_delay-ask"] = "连理：是否替 %src 使用或打出【闪】？",
+  ["#qyt__lianli_jink"] = "连理：是否令连理角色替你使用或打出【闪】？",
+  ["#qyt__tongxin-invoke"] = "同心：是否令所有处于连理状态的角色各摸一张牌？",
 }
 
 local caizhaoji = General(extension, "qyt__caiwenji", "qun", 3, 3, General.Female)
@@ -398,6 +669,11 @@ caizhaoji:addSkill(qyt__guihan)
 caizhaoji:addSkill(qyt__hujia)
 Fk:loadTranslationTable{
   ["qyt__caiwenji"] = "蔡昭姬",
+  ["#qyt__caiwenji"] = "乱世才女",
+  ["designer:qyt__caiwenji"] = "冢冢的青藤",
+  ["illustrator:qyt__caiwenji"] = "火星时代",
+  ["cv:qyt__caiwenji"] = "妙妙",
+
   ["qyt__guihan"] = "归汉",
   [":qyt__guihan"] = "出牌阶段限一次，你可以弃置两张花色相同的红色手牌并选择一名其他角色，与其交换位置。",
   ["qyt__hujia"] = "胡笳",
@@ -434,8 +710,8 @@ local shenjun = fk.CreateTriggerSkill{
       return true
     end
     room:notifySkillInvoked(player, self.name, "special")
-    local choices = {"male", "female"}  
-    if event == fk.EventPhaseStart then 
+    local choices = {"male", "female"}
+    if event == fk.EventPhaseStart then
       local gender
       if player.gender == General.Male then gender = "male"
       elseif player.gender == General.Female then gender = "female" end
@@ -514,6 +790,11 @@ luboyan:addSkill(qyt__zonghuo)
 
 Fk:loadTranslationTable{
   ["qyt__luxun"] = "陆伯言",
+  ["#qyt__luxun"] = "玩火的少年",
+  ["designer:qyt__luxun"] = "太阳神上，冢冢的青藤",
+  ["illustrator:qyt__luxun"] = "真三国无双5",
+  ["cv:qyt__luxun"] = "水浒杀",
+
   ["qyt__lbyshenjun"] = "神君",
   [":qyt__lbyshenjun"] = "锁定技，游戏开始时，你选择自己的性别为男或女；准备阶段开始时，你须改变性别；当你受到异性角色造成的非雷电伤害时，你防止之。",
   ["qyt__shaoying"] = "烧营",
@@ -534,27 +815,241 @@ Fk:loadTranslationTable{
   ["~qyt__luxun"] = "玩火自焚呐……",
 }
 
+local zhongshiji = General(extension, "qyt__zhonghui", "wei", 4)
+local qyt__gongmou = fk.CreateTriggerSkill{
+  name = "qyt__gongmou",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Finish
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+      "#qyt__gongmou-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local mark = U.getMark(to, "@@qyt__gongmou")
+    table.insertIfNeed(mark, player.id)
+    room:setPlayerMark(to, "@@qyt__gongmou", mark)
+  end,
+}
+local qyt__gongmou_delay = fk.CreateTriggerSkill{
+  name = "#qyt__gongmou_delay",
+  mute = true,
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player.phase == Player.Draw and player:getMark("@@qyt__gongmou") ~= 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local mark = U.getMark(player, "@@qyt__gongmou")
+    room:sortPlayersByAction(mark)
+    for _, id in ipairs(mark) do
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        room:doIndicate(p.id, {player.id})
+        p:broadcastSkillInvoke("qyt__gongmou")
+        room:notifySkillInvoked(p, "qyt__gongmou", "control")
+        local n = math.min(player:getHandcardNum(), p:getHandcardNum())
+        if n > 0 then
+          local cards = room:askForCard(player, n, n, false, "qyt__gongmou", false, ".", "#qyt__gongmou-give::"..p.id..":"..n)
+          room:moveCardTo(cards, Card.PlayerHand, p, fk.ReasonGive, "qyt__gongmou", "", false, player.id)
+          if player.dead then break end
+          if not p.dead then
+            n = math.min(n, p:getHandcardNum())
+            if n > 0 then
+              cards = room:askForCard(p, n, n, false, "qyt__gongmou", false, ".", "#qyt__gongmou-give::"..player.id..":"..n)
+              room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, "qyt__gongmou", "", false, p.id)
+            end
+          end
+        end
+      end
+    end
+    room:setPlayerMark(player, "@@qyt__gongmou", 0)
+  end,
+}
+qyt__gongmou:addRelatedSkill(qyt__gongmou_delay)
+zhongshiji:addSkill(qyt__gongmou)
 Fk:loadTranslationTable{
   ["qyt__zhonghui"] = "钟士季",
+  ["#qyt__zhonghui"] = "狠毒的野心家",
+  ["designer:qyt__zhonghui"] = "Jr.Wakaran",
+  ["illustrator:qyt__zhonghui"] = "战国无双3",
+  --["cv:qyt__zhonghui"] = "",
+
   ["qyt__gongmou"] = "共谋",
-  [":qyt__gongmou"] = "结束阶段，你可以选择一名其他角色，其于其下个摸牌阶段摸牌后，将X张手牌交给你（X为你与其手牌数的较小值），然后你将X张手牌交给其。",
+  [":qyt__gongmou"] = "结束阶段，你可以选择一名其他角色，其下个摸牌阶段结束时，将X张手牌交给你，然后你将X张手牌交给其（X为你与其手牌数的较小值）。",
+  ["#qyt__gongmou-choose"] = "共谋：选择一名角色，其下个摸牌阶段结束时，你与其交换若干张手牌",
+  ["@@qyt__gongmou"] = "共谋",
+  ["#qyt__gongmou-give"] = "共谋：请交给 %dest %arg张手牌",
 }
 
+--local jiangboyue = General(extension, "qyt__jiangwei", "shu", 4)
+local qyt__lexue = fk.CreateActiveSkill{
+  name = "qyt__lexue",
+  anim_type = "special",
+  card_num = 0,
+  target_num = 0,
+  prompt = "#qyt__lexue",
+  can_use = Util.TrueFunc,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    player:drawCards(3, self.name)
+    local generals = room:findGenerals(function(g)
+      return Fk.generals[g].kingdom == "shu"
+    end, 999)
+    local general = room:askForCustomDialog(player, self.name,
+    "packages/utility/qml/.qml", {  --需要一个选将大qml
+      
+    })
+    if general == "" then
+      general = { skills[1] }
+    else
+      general = json.decode(general)
+    end
+    room:changeHero(player, general, false, false, true)
+  end,
+}
+local qyt__lexue_delay = fk.CreateTriggerSkill{
+  name = "#qyt__lexue_delay",
+  mute = true,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:usedSkillTimes("qyt__lexue", Player.HistoryTurn) > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player.room:killPlayer{
+      who = player.id,
+    }
+  end,
+}
+--qyt__lexue:addRelatedSkill(qyt__lexue_delay)
+--jiangboyue:addSkill(qyt__lexue)
 Fk:loadTranslationTable{
-  ["qyt__jiangwei"] = "姜伯约",
+  ["qyt__jiangwei"] = "姜伯约",  --两个技能都挺重量级的
+  ["#qyt__jiangwei"] = "赤胆的贤将",
+  ["designer:qyt__jiangwei"] = "Jr.Wakaran，太阳神上",
+  ["illustrator:qyt__jiangwei"] = "战国无双3",
+  ["cv:qyt__jiangwei"] = "Jr.Wakaran",
+
   ["qyt__lexue"] = "乐学",
   [":qyt__lexue"] = "出牌阶段限一次，你可以令一名其他角色展示一张手牌：若为基本牌或普通锦囊牌，本回合你可以将与相同花色的牌当此牌使用或打出，"..
   "否则你获得之。",
   ["qyt__xunzhi"] = "殉志",
   [":qyt__xunzhi"] = "出牌阶段，你可以摸三张牌，然后变身为游戏外的一名蜀势力武将，若如此做，此回合结束时你死亡。",
+
+  ["#qyt__lexue"] = "殉志：摸三张牌并变身为一名蜀势力武将，本回合结束时死亡！",
 }
 
+local jiawenhe = General(extension, "qyt__jiaxu", "qun", 4)
+local qyt__dongcha = fk.CreateActiveSkill{
+  name = "qyt__dongcha",
+  card_num = 999,
+  target_num = 0,
+  expand_pile = function()
+    return U.getMark(Self, "qyt__dongcha")
+  end,
+  card_filter = function (self, to_select)
+    return table.contains(U.getMark(Self, "qyt__dongcha"), to_select)
+  end,
+  can_use =function (self, player, card, extra_data)
+    return #U.getMark(player, "qyt__dongcha") ~= 0
+  end,
+}
+local qyt__dongcha_trigger = fk.CreateTriggerSkill{
+  name = "#qyt__dongcha_trigger",
+  mute = true,
+  events = {fk.EventPhaseStart},
+  main_skill = qyt__dongcha,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+      "#qyt__dongcha-choose", self.name, true, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke("qyt__dongcha")
+    room:notifySkillInvoked(player, "qyt__dongcha", "control")
+    local to = room:getPlayerById(self.cost_data)
+    room:setPlayerMark(player, "qyt__dongcha-turn", to.id)
+    player:addBuddy(to)
+  end,
+
+  refresh_events = {fk.StartPlayCard},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:getMark("qyt__dongcha-turn") ~= 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(player:getMark("qyt__dongcha-turn"))
+    if to.dead or to:isKongcheng() then
+      room:setPlayerMark(player, "qyt__dongcha", 0)
+    else
+      room:setPlayerMark(player, "qyt__dongcha", to:getCardIds("h"))
+    end
+  end,
+}
+local qyt__dongcha_delay = fk.CreateTriggerSkill{
+  name = "#qyt__dongcha_delay",
+  mute = true,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("qyt__dongcha-turn") ~= 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local to = player.room:getPlayerById(player:getMark("qyt__dongcha-turn"))
+    player:removeBuddy(to)
+  end,
+}
+local qyt__dushi = fk.CreateTriggerSkill{
+  name = "qyt__dushi",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self, false, true) and data.damage and data.damage.from and
+      not data.damage.from.dead
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {data.damage.from.id})
+    room:handleAddLoseSkills(data.damage.from, "benghuai", nil, true, false)
+  end,
+}
+qyt__dongcha:addRelatedSkill(qyt__dongcha_trigger)
+qyt__dongcha:addRelatedSkill(qyt__dongcha_delay)
+jiawenhe:addSkill(qyt__dongcha)
+jiawenhe:addSkill(qyt__dushi)
 Fk:loadTranslationTable{
   ["qyt__jiaxu"] = "贾文和",
+  ["#qyt__jiaxu"] = "明哲保身",
+  ["designer:qyt__jiaxu"] = "氢弹",
+  ["illustrator:qyt__jiaxu"] = "三国豪杰传",
+  --["cv:qyt__jiaxu"] = "",
+
   ["qyt__dongcha"] = "洞察",
   [":qyt__dongcha"] = "准备阶段，你可以秘密选择一名其他角色，其所有手牌对你可见直到回合结束。",
   ["qyt__dushi"] = "毒士",
   [":qyt__dushi"] = "锁定技，当你死亡时，杀死你的角色获得〖崩坏〗。",
+  ["#qyt__dongcha-choose"] = "洞察：秘密选择一名角色，本回合其手牌对你可见",
 }
 
 local guzhielai = General(extension, "qyt__dianwei", "wei", 4)
@@ -601,6 +1096,11 @@ guzhielai:addSkill(qyt__sizhan)
 guzhielai:addSkill(qyt__shenli)
 Fk:loadTranslationTable{
   ["qyt__dianwei"] = "古之恶来",
+  ["#qyt__dianwei"] = "不坠悍将",
+  ["designer:qyt__dianwei"] = "Jr.Wakaran",
+  ["illustrator:qyt__dianwei"] = "《火凤燎原》",
+  --["cv:qyt__dianwei"] = "",
+
   ["qyt__sizhan"] = "死战",
   [":qyt__sizhan"] = "锁定技，当你受到伤害时，防止此伤害并获得等量的“死战”标记；结束阶段，你弃置所有的“死战”标记并失去等量的体力。 ",
   ["qyt__shenli"] = "神力",
@@ -687,6 +1187,11 @@ dengshizai:addSkill(qyt__zhenggong)
 dengshizai:addSkill(qyt__toudu)
 Fk:loadTranslationTable{
   ["qyt__dengai"] = "邓士载",
+  ["#qyt__dengai"] = "破蜀首功",
+  ["designer:qyt__dengai"] = "Bu懂",
+  ["illustrator:qyt__dengai"] = "三国豪杰传",
+  ["cv:qyt__dengai"] = "阿澈",
+
   ["qyt__zhenggong"] = "争功",
   [":qyt__zhenggong"] = "其他角色的额定回合开始前，若你的武将牌正面朝上，你可以获得一个额外的回合，此回合结束后，你将武将牌翻面。",
   ["qyt__toudu"] = "偷渡",
@@ -704,6 +1209,11 @@ Fk:loadTranslationTable{
 
 Fk:loadTranslationTable{
   ["qyt__zhanglu"] = "张公祺",
+  ["#qyt__zhanglu"] = "五斗米道",
+  ["designer:qyt__zhanglu"] = "背碗卤粉",
+  ["illustrator:qyt__zhanglu"] = "真三国友盟",
+  --["cv:qyt__zhanglu"] = "",
+
   ["qyt__yishe"] = "义舍",
   [":qyt__yishe"] = "出牌阶段，你可以将至少一张手牌置于你的武将牌上，称为“米”（“米”至多五张），或获得至少一张“米”；"..
   "其他角色的出牌阶段限两次，其可以选择一张“米”，你可以将之交给其。",
@@ -758,6 +1268,11 @@ yitianjian:addSkill(qyt__zhenwei)
 yitianjian:addSkill(qyt__yitian)
 Fk:loadTranslationTable{
   ["qyt__yitianjian"] = "倚天剑",
+  ["#qyt__yitianjian"] = "跨海斩长鲸",
+  ["designer:qyt__yitianjian"] = "太阳神上",
+  ["illustrator:qyt__yitianjian"] = "轩辕剑",
+  --["cv:qyt__yitianjian"] = "",
+
   ["qyt__zhengfeng"] = "争锋",
   [":qyt__zhengfeng"] = "锁定技，若你的装备区没有武器牌，你的攻击范围为X（X为你的体力值）。",
   ["qyt__zhenwei"] = "镇威",
@@ -804,8 +1319,14 @@ local qyt__taichen = fk.CreateActiveSkill{
   end,
 }
 panglingming:addSkill(qyt__taichen)
+panglingming:addSkill("mashu")
 Fk:loadTranslationTable{
   ["qyt__pangde"] = "庞令明",
+  ["#qyt__pangde"] = "抬榇之悟",
+  ["designer:qyt__pangde"] = "太阳神上",
+  ["illustrator:qyt__pangde"] = "三国志大战",
+  ["cv:qyt__pangde"] = "乱天乱外",
+
   ["qyt__taichen"] = "抬榇",
   [":qyt__taichen"] = "出牌阶段，你可以失去1点体力或弃置一张武器牌，依次弃置你攻击范围内的一名角色区域内的两张牌。",
   ["#qyt__taichen"] = "抬榇：选择一张武器牌或直接点“确定”失去1点体力，依次弃置一名角色区域内两张牌",
