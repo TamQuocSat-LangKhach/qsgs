@@ -148,11 +148,13 @@ local qyt__chengxiang_active = fk.CreateActiveSkill{
   min_card_num = 1,
   min_target_num = 1,
   card_filter = function(self, to_select, selected)
-    local num = 0
-    for _, id in ipairs(selected) do
-      num = num + Fk:getCardById(id).number
+    if not Self:prohibitDiscard(Fk:getCardById(to_select)) then
+      local num = 0
+      for _, id in ipairs(selected) do
+        num = num + Fk:getCardById(id).number
+      end
+      return num + Fk:getCardById(to_select).number <= Self:getMark("qyt__chengxiang")
     end
-    return num + Fk:getCardById(to_select).number <= Self:getMark("qyt__chengxiang")
   end,
   target_filter = function(self, to_select, selected, selected_cards)
     local num = 0
@@ -612,7 +614,8 @@ local qyt__guihan = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player:getHandcardNum() > 1
   end,
   card_filter = function(self, to_select, selected)
-    if #selected < 2 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip then
+    if #selected < 2 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip and
+      not Self:prohibitDiscard(Fk:getCardById(to_select)) then
       if #selected == 0 then
         return Fk:getCardById(to_select).color == Card.Red
       else
@@ -1144,45 +1147,12 @@ local qyt__toudu = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(self.cost_data, self.name, player, player)
+    if player.dead then return end
     player:turnOver()
     if player.dead then return end
-    local success, dat = room:askForUseActiveSkill(player, "qyt__toudu_viewas", "#qyt__toudu-slash", false)
-    if success then
-      local card = Fk:cloneCard("slash")
-      card.skillName = self.name
-      room:useCard{
-        from = player.id,
-        tos = table.map(dat.targets, function(id) return {id} end),
-        card = card,
-        extraUse = true,
-      }
-    end
+    U.askForUseVirtualCard(room, player, "slash", nil, self.name, "#qyt__toudu-slash", false, true, true, true)
   end,
 }
-local qyt__toudu_viewas = fk.CreateViewAsSkill{
-  name = "qyt__toudu_viewas",
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
-  view_as = function(self, cards)
-    local card = Fk:cloneCard("slash")
-    card.skillName = "qyt__toudu"
-    return card
-  end,
-}
-local qyt__toudu_targetmod = fk.CreateTargetModSkill{
-  name = "#qyt__toudu_targetmod",
-  distance_limit_func =  function(self, player, skill, card)
-    if card and table.contains(card.skillNames, "qyt__toudu") then
-      return 999
-    end
-  end,
-  bypass_times = function(self, player, skill, scope, card)
-    return card and table.contains(card.skillNames, "qyt__toudu")
-  end,
-}
-Fk:addSkill(qyt__toudu_viewas)
-qyt__toudu:addRelatedSkill(qyt__toudu_targetmod)
 dengshizai:addSkill(qyt__zhenggong)
 dengshizai:addSkill(qyt__toudu)
 Fk:loadTranslationTable{
@@ -1199,7 +1169,6 @@ Fk:loadTranslationTable{
   ["#qyt__zhenggong-invoke"] = "争功：%dest 的回合即将开始，你可以发动“争功”抢先执行一个回合！",
   ["@@qyt__zhenggong"] = "争功",
   ["#qyt__toudu-invoke"] = "偷渡：你可以弃置一张牌并翻面，视为使用一张无距离限制的【杀】",
-  ["qyt__toudu_viewas"] = "偷渡",
   ["#qyt__toudu-slash"] = "偷渡：视为使用一张无距离限制的【杀】",
 
   ["$qyt__zhenggong"] = "不肯屈人后，看某第一功！",
@@ -1207,6 +1176,165 @@ Fk:loadTranslationTable{
   ["~qyt__dengai"] = "蹇利西南，不利东北，破蜀功高，难以北回……",
 }
 
+local zhanggongqi = General(extension, "qyt__zhanglu", "qun", 3)
+local qyt__yishe = fk.CreateActiveSkill{
+  name = "qyt__yishe",
+  anim_type = "special",
+  card_num = 1,
+  target_num = 0,
+  prompt = "#qyt__yishe",
+  expand_pile = "zhanggongqi_rice",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand or Self:getPileNameOfId(to_select) == "zhanggongqi_rice"
+  end,
+  feasible = function (self, selected, selected_cards)
+    local to_put = table.filter(selected_cards, function(id)
+      return Fk:currentRoom():getCardArea(id) == Card.PlayerHand
+    end)
+    local to_get = table.filter(selected_cards, function(id)
+      return Self:getPileNameOfId(id) == "zhanggongqi_rice"
+    end)
+    return #selected_cards > 0 and #Self:getPile("zhanggongqi_rice") - #to_get + #to_put < 6
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local to_put  = table.filter(effect.cards, function(id)
+      return room:getCardArea(id) == Card.PlayerHand
+    end)
+    local to_get = table.filter(effect.cards, function(id)
+      return player:getPileNameOfId(id) == "zhanggongqi_rice"
+    end)
+    U.swapCardsWithPile(player, to_put, to_get, self.name, "zhanggongqi_rice", true)
+  end,
+}
+local qyt__yishe_active = fk.CreateActiveSkill{
+  name = "qyt__yishe&",
+  anim_type = "special",
+  card_num = 0,
+  target_num = 0,
+  prompt = "#qyt__yishe-active",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 and
+      table.find(Fk:currentRoom().alive_players, function(p)
+        return p ~= player and p:hasSkill("qyt__yishe") and #p:getPile("zhanggongqi_rice") > 0
+      end)
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = table.find(room:getOtherPlayers(player), function(p)
+      return p:hasSkill(qyt__yishe, true) and #p:getPile("zhanggongqi_rice") > 0
+    end)
+    if not target then return end
+    target:broadcastSkillInvoke("qyt__yishe")
+    room:doIndicate(player.id, {target.id})
+    local ids = target:getPile("zhanggongqi_rice")
+    local cards, _ = U.askforChooseCardsAndChoice(player, ids, {"OK"}, self.name, "#qyt__yishe-choose", {}, 1, 1)
+    if room:askForSkillInvoke(target, "qyt__yishe", nil,
+      "#qyt__yishe-give::"..player.id..":"..Fk:getCardById(cards[1], true):toLogString()) then
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, "", true, target.id)
+    end
+  end,
+}
+local qyt__yishe_trigger = fk.CreateTriggerSkill{
+  name = "#qyt__yishe_trigger",
+
+  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return player:hasSkill("qyt__yishe", true)
+    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+      return target == player and data.name == "qyt__yishe" and
+        not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill("qyt__yishe", true) end)
+    else
+      return target == player and player:hasSkill("qyt__yishe", true, true) and
+        not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill("qyt__yishe", true) end)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart or event == fk.EventAcquireSkill then
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        room:handleAddLoseSkills(p, "qyt__yishe&", nil, false, true)
+      end
+    else
+      for _, p in ipairs(room:getOtherPlayers(player, true, true)) do
+        room:handleAddLoseSkills(p, "-qyt__yishe&", nil, false, true)
+      end
+    end
+  end,
+}
+local qyt__xiliang = fk.CreateTriggerSkill{
+  name = "qyt__xiliang",
+  anim_type = "drawcard",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      local ids = {}
+      local room = player.room
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          if move.moveReason == fk.ReasonDiscard and move.from and move.from ~= player.id and
+            player.room:getPlayerById(move.from).phase == Player.Discard then
+            for _, info in ipairs(move.moveInfo) do
+              if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and
+              Fk:getCardById(info.cardId).color == Card.Red and
+              room:getCardArea(info.cardId) == Card.DiscardPile then
+                table.insertIfNeed(ids, info.cardId)
+              end
+            end
+          end
+        end
+      end
+      ids = U.moveCardsHoldingAreaCheck(room, ids)
+      if #ids > 0 then
+        self.cost_data = ids
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local ids = table.simpleClone(self.cost_data)
+    if #ids > 0 then
+      local choices = {"qyt__xiliang_put", "prey"}
+      if #player:getPile("zhanggongqi_rice") > 4 then
+        table.remove(choices, 1)
+      end
+      local cards, result = U.askforChooseCardsAndChoice(player, ids, choices, self.name,
+        "#qyt__xiliang-choose", {}, 1, #ids)
+      print(cards, result)
+      if result == "qyt__xiliang_put" then
+        local n = #player:getPile("zhanggongqi_rice") + #cards - 5
+        if n > 0 then
+          ids = {}
+          for i = #cards, 6, -1 do
+            table.insert(ids, cards[i])
+            table.remove(cards, i)
+          end
+          player:addToPile("zhanggongqi_rice", cards, true, self.name, player.id)
+          if not player.dead then
+            ids = U.moveCardsHoldingAreaCheck(room, ids)
+            if #ids > 0 then
+              room:moveCardTo(ids, Card.PlayerHand, player, fk.ReasonPrey, self.name, "", true, player.id)
+            end
+          end
+        else
+          player:addToPile("zhanggongqi_rice", cards, true, self.name, player.id)
+        end
+      else
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, "", true, player.id)
+      end
+    end
+  end,
+}
+Fk:addSkill(qyt__yishe_active)
+qyt__yishe:addRelatedSkill(qyt__yishe_trigger)
+zhanggongqi:addSkill(qyt__yishe)
+zhanggongqi:addSkill(qyt__xiliang)
 Fk:loadTranslationTable{
   ["qyt__zhanglu"] = "张公祺",
   ["#qyt__zhanglu"] = "五斗米道",
@@ -1215,10 +1343,19 @@ Fk:loadTranslationTable{
   --["cv:qyt__zhanglu"] = "",
 
   ["qyt__yishe"] = "义舍",
-  [":qyt__yishe"] = "出牌阶段，你可以将至少一张手牌置于你的武将牌上，称为“米”（“米”至多五张），或获得至少一张“米”；"..
-  "其他角色的出牌阶段限两次，其可以选择一张“米”，你可以将之交给其。",
+  [":qyt__yishe"] = "出牌阶段限一次，你可以将任意张手牌与任意张“米”交换（“米”至多五张）；其他角色的出牌阶段限两次，"..
+  "其可以选择一张“米”，你可以将之交给其。",
   ["qyt__xiliang"] = "惜粮",
   [":qyt__xiliang"] = "当其他角色于其弃牌阶段弃置一张红色牌后，你可以选择一项：1.将之置为“米”；2.获得之。",
+  ["qyt__yishe&"] = "义舍",
+  [":qyt__yishe&"] = "出牌阶段限两次，你可以选择一张“米”，张公祺可以将之交给你。",
+  ["#qyt__yishe"] = "义舍：选择任意张手牌置为“米”，选择任意张“米”获得（“米”至多五张）",
+  ["zhanggongqi_rice"] = "米",
+  ["#qyt__yishe-active"] = "义舍：选择一张“米”，张公祺可以将之交给你",
+  ["#qyt__yishe-choose"] = "义舍：选择你想获得的“米”",
+  ["#qyt__yishe-give"] = "义舍：是否允许 %dest 获得%arg？",
+  ["#qyt__xiliang-choose"] = "惜粮：选择将这些牌置为“米”或获得之",
+  ["qyt__xiliang_put"] = "置为“米”",
 }
 
 local yitianjian = General(extension, "qyt__yitianjian", "wei", 4)
@@ -1227,7 +1364,7 @@ local qyt__zhengfeng = fk.CreateAttackRangeSkill{
   anim_type = "offensive",
   frequency = Skill.Compulsory,
   correct_func = function (self, from, to)
-    if from:hasSkill(self) and not from:getEquipment(Card.SubtypeWeapon) then
+    if from:hasSkill(self) and #from:getEquipments(Card.SubtypeWeapon) == 0 then
       return from.hp - 1
     end
     return 0
@@ -1299,7 +1436,7 @@ local qyt__taichen = fk.CreateActiveSkill{
       if #selected_cards == 0 or Fk:currentRoom():getCardArea(selected_cards[1]) ~= Player.Equip then
         return Self:inMyAttackRange(Fk:currentRoom():getPlayerById(to_select))
       else
-        return Self:distanceTo(Fk:currentRoom():getPlayerById(to_select)) == 1  --FIXME: some skills(eg.gongqi, meibu) add attackrange directly!
+        return Self:inMyAttackRange(Fk:currentRoom():getPlayerById(to_select), 1 - Fk:getCardById(selected_cards[1]).attack_range)
       end
     end
   end,
