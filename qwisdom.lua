@@ -675,7 +675,7 @@ local qw__jiehuo = fk.CreateTriggerSkill{
     local room = player.room
     room:changeMaxHp(player, -1)
     if not player.dead then
-      room:handleAddLoseSkills(player, "qw__jiehuo", nil, true, false)
+      room:handleAddLoseSkills(player, "qw__shien", nil, true, false)
     end
   end,
 }

@@ -894,13 +894,101 @@ Fk:loadTranslationTable{
   ["#qyt__gongmou-give"] = "共谋：请交给 %dest %arg张手牌",
 }
 
---local jiangboyue = General(extension, "qyt__jiangwei", "shu", 4)
+local jiangboyue = General(extension, "qyt__jiangwei", "shu", 4)
 local qyt__lexue = fk.CreateActiveSkill{
   name = "qyt__lexue",
   anim_type = "special",
+  card_num = function(self)
+    if Self:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
+      return 0
+    else
+      return 1
+    end
+  end,
+  prompt = function(self)
+    if Self:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
+      return "#qyt__lexue-active"
+    else
+      return "#qyt__lexue-viewas:::"..U.ConvertSuit(Self:getMark("qyt__lexue_suit-turn"), "int", "sym")..
+        ":"..Fk:translate(Self:getMark("qyt__lexue_name-turn"))
+    end
+  end,
+  can_use = function(self, player)
+    if player:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
+      return true
+    else
+      if player:getMark("qyt__lexue_name-turn") ~= 0 then
+        local card = Fk:cloneCard(player:getMark("qyt__lexue_name-turn"))
+        return player:canUse(card) and not player:prohibitUse(card)
+      end
+    end
+  end,
+  card_filter = function(self, to_select, selected)
+    if Self:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
+      return false
+    else
+      return #selected == 0 and Fk:getCardById(to_select).suit == Self:getMark("qyt__lexue_suit-turn")
+    end
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if Self:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
+      return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+    elseif #selected_cards == 1 then
+      local card = Fk:cloneCard(Self:getMark("qyt__lexue_name-turn"))
+      card.skillName = self.name
+      if card.skill:getMinTargetNum() == 0 then
+        return false
+      else
+        return card.skill:targetFilter(to_select, selected, selected_cards, card)
+      end
+    end
+  end,
+  feasible = function(self, selected, selected_cards)
+    if Self:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
+      return #selected_cards == 0 and #selected == 1
+    else
+      local card = Fk:cloneCard(Self:getMark("qyt__lexue_name-turn"))
+      card.skillName = self.name
+      card:addSubcards(selected_cards)
+      if Self:canUse(card) and not Self:prohibitUse(card) then
+        return #selected_cards == 1 and card.skill:feasible(selected, selected_cards, Self, card)
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    if player:usedSkillTimes(self.name, Player.HistoryPhase) <= 1 then
+      local target = room:getPlayerById(effect.tos[1])
+      local card = room:askForCard(target, 1, 1, false, self.name, false, ".|.|.|hand", "#qyt__lexue-show:"..player.id)
+      target:showCards(card)
+      if player.dead then return end
+      card = Fk:getCardById(card[1])
+      if card.type == Card.TypeBasic or card:isCommonTrick() then
+        room:setPlayerMark(player, "@qyt__lexue-turn", Fk:translate(card:getSuitString(true)).." "..Fk:translate(card.name))
+        room:setPlayerMark(player, "qyt__lexue_suit-turn", card.suit)
+        room:setPlayerMark(player, "qyt__lexue_name-turn", card.name)
+      end
+      if room:getCardOwner(card) == target and room:getCardArea(card) == Card.PlayerHand then
+        room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+      end
+    else
+      local use = {
+        from = player.id,
+        tos = table.map(effect.tos, function (id) return {id} end),
+        card = Fk:cloneCard(player:getMark("qyt__lexue_name-turn")),
+      }
+      use.card:addSubcards(effect.cards)
+      use.card.skillName = self.name
+      room:useCard(use)
+    end
+  end,
+}
+local qyt__xunzhi = fk.CreateActiveSkill{
+  name = "qyt__xunzhi",
+  anim_type = "special",
   card_num = 0,
   target_num = 0,
-  prompt = "#qyt__lexue",
+  prompt = "#qyt__xunzhi",
   can_use = Util.TrueFunc,
   card_filter = function(self, to_select, selected)
     return false
@@ -911,24 +999,83 @@ local qyt__lexue = fk.CreateActiveSkill{
     local generals = room:findGenerals(function(g)
       return Fk.generals[g].kingdom == "shu"
     end, 999)
-    local general = room:askForCustomDialog(player, self.name,
-    "packages/utility/qml/.qml", {  --需要一个选将大qml
-      
+    local result = room:askForCustomDialog(player, self.name, "packages/utility/qml/ChooseGeneralsAndChoiceBox.qml", {
+      generals,
+      {"OK"},
+      "#qyt__xunzhi-choose",
+      {},
+      1,
+      1,
+      {player.general, player.deputyGeneral},
     })
-    if general == "" then
-      general = { skills[1] }
+    local general = ""
+    if result == "" then
+      general = "jiangwei"
     else
-      general = json.decode(general)
+      local reply = json.decode(result)
+      if reply.choice == "OK" then
+        general = reply.cards[1]
+      else
+        general = "jiangwei"
+      end
     end
-    room:changeHero(player, general, false, false, true)
+    table.removeOne(room.general_pile, general)
+    local isDeputy = false
+    if player.deputyGeneral ~= nil and player.deputyGeneral == "qyt__jiangwei" then
+      isDeputy = true
+    end
+    if player:getMark(self.name) == 0 then
+      room:setPlayerMark(player, "qyt__xunzhi", {isDeputy and player.deputyGeneral or player.general, isDeputy})
+    end
+    room:setPlayerProperty(player, isDeputy and "deputyGeneral" or "general", general)
+    if not isDeputy and player.kingdom ~= "shu" then
+      room:changeKingdom(player, "shu", true)
+    end
+    local skills = {}
+    local newGeneral = Fk.generals[general] or Fk.generals["blank_shibing"]
+    for _, name in ipairs(newGeneral:getSkillNameList(player.role == "lord")) do
+      local s = Fk.skills[name]
+      if not s.relate_to_place or (s.relate_to_place == "m" and not isDeputy) or (s.relate_to_place == "d" and isDeputy) then
+        table.insertIfNeed(skills, name)
+      end
+    end
+    for _, s in ipairs(Fk.generals[player.general].skills) do
+      if #s.attachedKingdom > 0 then
+        if table.contains(s.attachedKingdom, player.kingdom) then
+          table.insertIfNeed(skills, s.name)
+        else
+          if table.contains(skills, s.name) then
+            table.removeOne(skills, s.name)
+          else
+            table.insertIfNeed(skills, "-"..s.name)
+          end
+        end
+      end
+    end
+    if player.deputyGeneral ~= "" then
+      for _, s in ipairs(Fk.generals[player.deputyGeneral].skills) do
+        if #s.attachedKingdom > 0 then
+          if table.contains(s.attachedKingdom, player.kingdom) then
+            table.insertIfNeed(skills, s.name)
+          else
+            if table.contains(skills, s.name) then
+              table.removeOne(skills, s.name)
+            else
+              table.insertIfNeed(skills, "-"..s.name)
+            end
+          end
+        end
+      end
+    end
+    room:handleAddLoseSkills(player, table.concat(skills, "|"), nil, true, false)
   end,
 }
-local qyt__lexue_delay = fk.CreateTriggerSkill{
-  name = "#qyt__lexue_delay",
+local qyt__xunzhi_delay = fk.CreateTriggerSkill{
+  name = "#qyt__xunzhi_delay",
   mute = true,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:usedSkillTimes("qyt__lexue", Player.HistoryTurn) > 0
+    return target == player and player:usedSkillTimes("qyt__xunzhi", Player.HistoryTurn) > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -936,9 +1083,24 @@ local qyt__lexue_delay = fk.CreateTriggerSkill{
       who = player.id,
     }
   end,
+
+  refresh_events = {fk.BeforeGameOverJudge},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("qyt__xunzhi") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("qyt__xunzhi")
+    if mark[2] then
+      room:setPlayerProperty(player, "deputyGeneral", mark[1])
+    else
+      room:setPlayerProperty(player, "general", mark[1])
+    end
+  end,
 }
---qyt__lexue:addRelatedSkill(qyt__lexue_delay)
---jiangboyue:addSkill(qyt__lexue)
+qyt__xunzhi:addRelatedSkill(qyt__xunzhi_delay)
+jiangboyue:addSkill(qyt__lexue)
+jiangboyue:addSkill(qyt__xunzhi)
 Fk:loadTranslationTable{
   ["qyt__jiangwei"] = "姜伯约",  --两个技能都挺重量级的
   ["#qyt__jiangwei"] = "赤胆的贤将",
@@ -947,12 +1109,16 @@ Fk:loadTranslationTable{
   ["cv:qyt__jiangwei"] = "Jr.Wakaran",
 
   ["qyt__lexue"] = "乐学",
-  [":qyt__lexue"] = "出牌阶段限一次，你可以令一名其他角色展示一张手牌：若为基本牌或普通锦囊牌，本回合你可以将与相同花色的牌当此牌使用或打出，"..
-  "否则你获得之。",
+  [":qyt__lexue"] = "出牌阶段限一次，你可以令一名其他角色展示一张手牌，你获得之。若为基本牌或普通锦囊牌，本回合出牌阶段，你可以将相同花色的牌"..
+  "当此牌使用。",
   ["qyt__xunzhi"] = "殉志",
-  [":qyt__xunzhi"] = "出牌阶段，你可以摸三张牌，然后变身为游戏外的一名蜀势力武将，若如此做，此回合结束时你死亡。",
-
-  ["#qyt__lexue"] = "殉志：摸三张牌并变身为一名蜀势力武将，本回合结束时死亡！",
+  [":qyt__xunzhi"] = "出牌阶段，你可以摸三张牌，然后变身为游戏外的一名蜀势力武将（保留原有的技能），若如此做，此回合结束时你死亡。",
+  ["#qyt__lexue-show"] = "乐学：请展示一张手牌，令 %src 获得",
+  ["#qyt__lexue-active"] = "乐学：令一名其他角色展示一张手牌",
+  ["#qyt__lexue-viewas"] = "乐学：你可以将一张%arg牌当【%arg2】使用",
+  ["@qyt__lexue-turn"] = "乐学",
+  ["#qyt__xunzhi"] = "殉志：摸三张牌并变身为一名蜀势力武将，本回合结束时死亡！",
+  ["#qyt__xunzhi-choose"] = "殉志：选择要变身的武将",
 }
 
 local jiawenhe = General(extension, "qyt__jiaxu", "qun", 4)
