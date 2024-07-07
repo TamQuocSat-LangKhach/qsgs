@@ -997,9 +997,12 @@ local qyt__xunzhi = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     player:drawCards(3, self.name)
-    local generals = room:findGenerals(function(g)
-      return Fk.generals[g].kingdom == "shu"
-    end, 999)
+    local generals = {}
+    for name, general in pairs(Fk.generals) do
+      if general.package.extensionName ~= "hegemony" and general.kingdom == "shu" then
+        table.insert(generals, name)
+      end
+    end
     local result = room:askForCustomDialog(player, self.name, "packages/utility/qml/ChooseGeneralsAndChoiceBox.qml", {
       generals,
       {"OK"},
@@ -1020,7 +1023,6 @@ local qyt__xunzhi = fk.CreateActiveSkill{
         general = "jiangwei"
       end
     end
-    room:returnToGeneralPile(generals)
     table.removeOne(room.general_pile, general)
     local isDeputy = false
     if player.deputyGeneral ~= nil and player.deputyGeneral == "qyt__jiangwei" then
@@ -1030,8 +1032,14 @@ local qyt__xunzhi = fk.CreateActiveSkill{
       room:setPlayerMark(player, "qyt__xunzhi", {isDeputy and player.deputyGeneral or player.general, isDeputy})
     end
     room:setPlayerProperty(player, isDeputy and "deputyGeneral" or "general", general)
-    if not isDeputy and player.kingdom ~= "shu" then
-      room:changeKingdom(player, "shu", true)
+    if not isDeputy then
+      if player.gender ~= Fk.generals[general].gender then
+        player.gender = Fk.generals[general].gender
+        room:notifyProperty(player, player, "general")
+      end
+      if player.kingdom ~= "shu" then
+        room:changeKingdom(player, "shu", true)
+      end
     end
     local skills = {}
     local newGeneral = Fk.generals[general] or Fk.generals["blank_shibing"]
