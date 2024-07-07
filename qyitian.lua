@@ -986,13 +986,14 @@ local qyt__lexue = fk.CreateActiveSkill{
 local qyt__xunzhi = fk.CreateActiveSkill{
   name = "qyt__xunzhi",
   anim_type = "special",
+  frequency = Skill.Limited,
   card_num = 0,
   target_num = 0,
   prompt = "#qyt__xunzhi",
-  can_use = Util.TrueFunc,
-  card_filter = function(self, to_select, selected)
-    return false
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
+  card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     player:drawCards(3, self.name)
@@ -1112,7 +1113,7 @@ Fk:loadTranslationTable{
   [":qyt__lexue"] = "出牌阶段限一次，你可以令一名其他角色展示一张手牌，你获得之。若为基本牌或普通锦囊牌，本回合出牌阶段，你可以将相同花色的牌"..
   "当此牌使用。",
   ["qyt__xunzhi"] = "殉志",
-  [":qyt__xunzhi"] = "出牌阶段，你可以摸三张牌，然后变身为游戏外的一名蜀势力武将（保留原有的技能），若如此做，此回合结束时你死亡。",
+  [":qyt__xunzhi"] = "限定技，出牌阶段，你可以摸三张牌，然后变身为游戏外的一名蜀势力武将（保留原有的技能），若如此做，此回合结束时你死亡。",
   ["#qyt__lexue-show"] = "乐学：请展示一张手牌，令 %src 获得",
   ["#qyt__lexue-active"] = "乐学：令一名其他角色展示一张手牌",
   ["#qyt__lexue-viewas"] = "乐学：你可以将一张%arg牌当【%arg2】使用",
