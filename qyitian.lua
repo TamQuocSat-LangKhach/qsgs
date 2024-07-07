@@ -1000,7 +1000,6 @@ local qyt__xunzhi = fk.CreateActiveSkill{
     local generals = room:findGenerals(function(g)
       return Fk.generals[g].kingdom == "shu"
     end, 999)
-    room:returnToGeneralPile(generals)
     local result = room:askForCustomDialog(player, self.name, "packages/utility/qml/ChooseGeneralsAndChoiceBox.qml", {
       generals,
       {"OK"},
@@ -1021,6 +1020,7 @@ local qyt__xunzhi = fk.CreateActiveSkill{
         general = "jiangwei"
       end
     end
+    room:returnToGeneralPile(generals)
     table.removeOne(room.general_pile, general)
     local isDeputy = false
     if player.deputyGeneral ~= nil and player.deputyGeneral == "qyt__jiangwei" then
