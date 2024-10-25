@@ -28,7 +28,7 @@ local qw__juao = fk.CreateActiveSkill{
     local to = room:getPlayerById(effect.tos[1])
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(effect.cards)
-    to:addToPile(self.name, dummy, false, self.name)
+    to:addToPile("$qw__juao", dummy, false, self.name)
   end,
 }
 local qw__juao_delay = fk.CreateTriggerSkill{
@@ -36,12 +36,12 @@ local qw__juao_delay = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.DrawNCards},
   can_trigger = function(self, event, target, player, data)
-    return target == player and #player:getPile("qw__juao") > 0
+    return target == player and #player:getPile("$qw__juao") > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = table.simpleClone(player:getPile("qw__juao"))
+    local cards = table.simpleClone(player:getPile("$qw__juao"))
     room:moveCards({
       ids = cards,
       from = player.id,
@@ -107,6 +107,7 @@ Fk:loadTranslationTable{
   ["qw__juao"] = "倨傲",
   [":qw__juao"] = "出牌阶段限一次，你可以将至少一张手牌扣置于一名角色的武将牌旁，其下个摸牌阶段摸牌时获得这些牌，且其本阶段的摸牌数减少等量张。",
   ["#qw__juao_delay"] = "倨傲",
+  ["$qw__juao"] = "倨傲",
   ["qw__tanlan"] = "贪婪",
   [":qw__tanlan"] = "每当你受到其他角色造成的伤害后，你可以与该角色拼点：若你赢，你获得双方的拼点牌。",
   ["#qw__tanlan-invoke"] = "贪婪：你可以与 %src 拼点",
