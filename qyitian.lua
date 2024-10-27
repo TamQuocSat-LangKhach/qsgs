@@ -382,10 +382,10 @@ local qyt__lianli = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local mark = U.getMark(player, "@@qyt__lianli_from")
+    local mark = player:getTableMark("@@qyt__lianli_from")
     table.insertIfNeed(mark, to.id)
     room:setPlayerMark(player, "@@qyt__lianli_from", mark)
-    mark = U.getMark(to, "@@qyt__lianli_to")
+    mark = to:getTableMark("@@qyt__lianli_to")
     table.insertIfNeed(mark, player.id)
     room:setPlayerMark(to, "@@qyt__lianli_to", mark)
     room:handleAddLoseSkills(to, "qyt__lianli_slash&", nil, false, true)
@@ -398,7 +398,7 @@ local qyt__lianli = fk.CreateTriggerSkill{
         return player:getMark("@@qyt__lianli_from") ~= 0
       else
         return table.find(player.room.alive_players, function(p)
-          return table.contains(U.getMark(p, "@@qyt__lianli_to"), player.id)
+          return table.contains(p:getTableMark("@@qyt__lianli_to"), player.id)
         end)
       end
     end
@@ -407,7 +407,7 @@ local qyt__lianli = fk.CreateTriggerSkill{
     local room = player.room
     room:setPlayerMark(player, "@@qyt__lianli_from", 0)
     for _, p in ipairs(room.alive_players) do
-      local mark2 = U.getMark(p, "@@qyt__lianli_to")
+      local mark2 = p:getTableMark("@@qyt__lianli_to")
       if table.contains(mark2, player.id) then
         table.removeOne(mark2, player.id)
         if #mark2 == 0 then
@@ -430,7 +430,7 @@ local qyt__lianli_delay = fk.CreateTriggerSkill{
       (data.cardName == "jink" or (data.pattern and Exppattern:Parse(data.pattern):matchExp("jink|0|nosuit|none"))) and
       (data.extraData == nil or data.extraData.qyt__lianli_ask == nil) and
       table.find(player.room.alive_players, function(p)
-        return table.contains(U.getMark(p, "@@qyt__lianli_to"), player.id)
+        return table.contains(p:getTableMark("@@qyt__lianli_to"), player.id)
       end)
   end,
   on_cost = function(self, event, target, player, data)
@@ -439,7 +439,7 @@ local qyt__lianli_delay = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if p:isAlive() and table.contains(U.getMark(player, "@@qyt__lianli_from"), p.id) then
+      if p:isAlive() and table.contains(player:getTableMark("@@qyt__lianli_from"), p.id) then
         local cardResponded = room:askForResponse(p, "jink", "jink", "#qyt__lianli_delay-ask:"..player.id, true, {qyt__lianli_ask = true})
         if cardResponded then
           room:responseCard({
@@ -492,7 +492,7 @@ local qyt__lianli_slash = fk.CreateViewAsSkill{
     end
 
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if table.contains(U.getMark(player, "@@qyt__lianli_to"), p.id) then
+      if table.contains(player:getTableMark("@@qyt__lianli_to"), p.id) then
         local cardResponded = room:askForResponse(p, "slash", "slash", "#qyt__lianli_slash-ask:"..player.id, true)
         if cardResponded then
           room:responseCard({
@@ -554,17 +554,17 @@ local qyt__liqian = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player:hasSkill("qyt__lianli", true) then
       if event == fk.AfterSkillEffect and data == qyt__lianli then
-        local mark = U.getMark(player, "@@qyt__lianli_from")
+        local mark = player:getTableMark("@@qyt__lianli_from")
         return player.kingdom ~= player.room:getPlayerById(mark[#mark]).kingdom
       elseif event == fk.AfterPropertyChange then
-        return target.kingdom ~= player.kingdom and table.contains(U.getMark(player, "@@qyt__lianli_from"), target.id)
+        return target.kingdom ~= player.kingdom and table.contains(player:getTableMark("@@qyt__lianli_from"), target.id)
       end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterSkillEffect or event == fk.AfterPropertyChange then
-      local mark = U.getMark(player, "@@qyt__lianli_from")
+      local mark = player:getTableMark("@@qyt__lianli_from")
       local to = room:getPlayerById(mark[#mark])
       room:changeKingdom(player, to.kingdom, true)
     else
@@ -837,7 +837,7 @@ local qyt__gongmou = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local mark = U.getMark(to, "@@qyt__gongmou")
+    local mark = to:getTableMark("@@qyt__gongmou")
     table.insertIfNeed(mark, player.id)
     room:setPlayerMark(to, "@@qyt__gongmou", mark)
   end,
@@ -852,7 +852,7 @@ local qyt__gongmou_delay = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, "@@qyt__gongmou")
+    local mark = player:getTableMark("@@qyt__gongmou")
     room:sortPlayersByAction(mark)
     for _, id in ipairs(mark) do
       local p = room:getPlayerById(id)
@@ -1137,13 +1137,13 @@ local qyt__dongcha = fk.CreateActiveSkill{
   card_num = 999,
   target_num = 0,
   expand_pile = function()
-    return U.getMark(Self, "qyt__dongcha")
+    return Self:getTableMark("qyt__dongcha")
   end,
   card_filter = function (self, to_select)
-    return table.contains(U.getMark(Self, "qyt__dongcha"), to_select)
+    return table.contains(Self:getTableMark("qyt__dongcha"), to_select)
   end,
   can_use =function (self, player, card, extra_data)
-    return #U.getMark(player, "qyt__dongcha") ~= 0
+    return #player:getTableMark("qyt__dongcha") ~= 0
   end,
 }
 local qyt__dongcha_trigger = fk.CreateTriggerSkill{
