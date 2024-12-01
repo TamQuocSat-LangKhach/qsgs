@@ -15,20 +15,18 @@ local qw__juao = fk.CreateActiveSkill{
   min_card_num = 1,
   target_num = 1,
   card_filter = function(self, to_select, selected)
-    return Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+    return table.contains(Self:getCardIds("h"), to_select)
   end,
   target_filter = function(self, to_select, selected, cards)
     return #selected == 0 and #cards > 0
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.tos[1])
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(effect.cards)
-    to:addToPile("$qw__juao", dummy, false, self.name)
+    to:addToPile("$qw__juao", effect.cards, false, self.name)
   end,
 }
 local qw__juao_delay = fk.CreateTriggerSkill{
@@ -77,9 +75,7 @@ local qw__tanlan = fk.CreateTriggerSkill{
       function(id) return room:getCardArea(id) == Card.DiscardPile end)
       if #cards > 0 then
         room:delay(500)
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(cards)
-        room:obtainCard(player, dummy, true, fk.ReasonPrey)
+        room:obtainCard(player, cards, true, fk.ReasonPrey)
       end
     end
   end
@@ -431,17 +427,16 @@ local qw__fuzuo = fk.CreateTriggerSkill{
       return not player:prohibitDiscard(c) and c.number < 8
     end)
     local tos, cards = room:askForChooseCardsAndPlayers(player, 1, 1, table.map(targets, Util.IdMapper), 1, 1, tostring(Exppattern{ id = ids }), "#qw__fuzuo-card", self.name, true, true)
-    if tos and cards then
-      self.cost_data = {tos[1], cards[1]}
+    if #tos == 1 and #cards == 1 then
+      self.cost_data = {tos = tos, cards = cards}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cardId = self.cost_data[2]
-    room:throwCard(cardId, self.name, player, player)
-    local number = Fk:getCardById(cardId).number
-    local toId = self.cost_data[1]
+    local toId = self.cost_data.tos[1]
+    local number = Fk:getCardById(self.cost_data.cards[1]).number
+    room:throwCard(self.cost_data.cards, self.name, player, player)
     if toId == data.from.id then
       data.fromCard.number = math.min(13, data.fromCard.number + number)
     else
@@ -461,13 +456,13 @@ local qw__jincui = fk.CreateTriggerSkill{
     local room = player.room
     local p = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1, "#qw__jincui-choose", self.name, true)
     if #p > 0 then
-      self.cost_data = p[1]
+      self.cost_data = {tos = p}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
+    local to = room:getPlayerById(self.cost_data.tos[1])
     local choices = {"draw3"}
     if not to:isNude() then table.insert(choices, "discard3") end
     local choice = room:askForChoice(player, choices, self.name)
