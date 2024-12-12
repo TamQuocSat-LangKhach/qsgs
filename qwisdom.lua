@@ -490,7 +490,6 @@ Fk:loadTranslationTable{
   [":qw__jincui"] = "当你死亡时，可选择一名其他角色，令该角色摸三张牌或者弃置三张牌。",
   ["#qw__jincui-choose"] = "尽瘁：可以令一名其他角色摸三张牌或者弃置三张牌",
   ["discard3"] = "弃置三张牌",
-  ["draw3"] = "摸三张牌",
 }
 
 local huaxiong = General(extension, "qw__huaxiong", "qun", 4)

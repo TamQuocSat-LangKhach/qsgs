@@ -174,9 +174,7 @@ local qyt__conghui = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.to == Player.Discard
   end,
-  on_use = function(self, event, target, player, data)
-    return true
-  end,
+  on_use = Util.TrueFunc,
 }
 local qyt__zaoyao = fk.CreateTriggerSkill{
   name = "qyt__zaoyao",
@@ -716,7 +714,7 @@ local shenjun = fk.CreateTriggerSkill{
     local choices = {"male", "female"}
     if event == fk.EventPhaseStart then
       local gender
-      if player.gender == General.Male then gender = "male"
+      if player.gender == General.Male then gender = "male" -- 故意的
       elseif player.gender == General.Female then gender = "female" end
       table.removeOne(choices, gender)
     end
