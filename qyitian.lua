@@ -380,12 +380,8 @@ local qyt__lianli = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local mark = player:getTableMark("@@qyt__lianli_from")
-    table.insertIfNeed(mark, to.id)
-    room:setPlayerMark(player, "@@qyt__lianli_from", mark)
-    mark = to:getTableMark("@@qyt__lianli_to")
-    table.insertIfNeed(mark, player.id)
-    room:setPlayerMark(to, "@@qyt__lianli_to", mark)
+    room:addTableMarkIfNeed(player, "@@qyt__lianli_from", to.id)
+    room:addTableMarkIfNeed(player, "@@qyt__lianli_to", player.id)
     room:handleAddLoseSkills(to, "qyt__lianli_slash&", nil, false, true)
   end,
 
@@ -835,9 +831,7 @@ local qyt__gongmou = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local mark = to:getTableMark("@@qyt__gongmou")
-    table.insertIfNeed(mark, player.id)
-    room:setPlayerMark(to, "@@qyt__gongmou", mark)
+    room:addTableMarkIfNeed(to, "@@qyt__gongmou", player.id)
   end,
 }
 local qyt__gongmou_delay = fk.CreateTriggerSkill{
