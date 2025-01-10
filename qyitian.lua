@@ -306,12 +306,12 @@ local qyt__kegou = fk.CreateTriggerSkill{
       player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
-    return not table.find(player.room:getOtherPlayers(player), function(p) return p.kingdom == "wu" and p.role ~= "lord" end)
+    return not table.find(player.room:getOtherPlayers(player, false), function(p) return p.kingdom == "wu" and p.role ~= "lord" end)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
-    room:handleAddLoseSkills(player, "lianying", nil, true, false)
+    if player:isAlive() then room:handleAddLoseSkills(player, "lianying", nil, true, false) end
   end,
 }
 lukang:addSkill(qyt__weiyan)
@@ -486,7 +486,7 @@ local qyt__lianli_slash = fk.CreateViewAsSkill{
     end
 
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if table.contains(player:getTableMark("@@qyt__lianli_to"), p.id) then
+      if table.contains(player:getTableMark("@@qyt__lianli_to"), p.id) and p:isAlive() then
         local cardResponded = room:askForResponse(p, "slash", "slash", "#qyt__lianli_slash-ask:"..player.id, true)
         if cardResponded then
           room:responseCard({
@@ -821,7 +821,7 @@ local qyt__gongmou = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Finish
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
       "#qyt__gongmou-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
@@ -1147,7 +1147,7 @@ local qyt__dongcha_trigger = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Start
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
       "#qyt__dongcha-choose", self.name, true, true)
     if #to > 0 then
       self.cost_data = to[1]
@@ -1352,6 +1352,7 @@ local qyt__yishe = fk.CreateActiveSkill{
   target_num = 0,
   prompt = "#qyt__yishe",
   expand_pile = "zhanggongqi_rice",
+  attached_skill_name = "qyt__yishe&",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -1404,34 +1405,6 @@ local qyt__yishe_active = fk.CreateActiveSkill{
     if room:askForSkillInvoke(target, "qyt__yishe", nil,
       "#qyt__yishe-give::"..player.id..":"..Fk:getCardById(cards[1], true):toLogString()) then
       room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, "", true, target.id)
-    end
-  end,
-}
-local qyt__yishe_trigger = fk.CreateTriggerSkill{
-  name = "#qyt__yishe_trigger",
-
-  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return player:hasSkill("qyt__yishe", true)
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return target == player and data.name == "qyt__yishe" and
-        not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill("qyt__yishe", true) end)
-    else
-      return target == player and player:hasSkill("qyt__yishe", true, true) and
-        not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill("qyt__yishe", true) end)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
-      for _, p in ipairs(room:getOtherPlayers(player)) do
-        room:handleAddLoseSkills(p, "qyt__yishe&", nil, false, true)
-      end
-    else
-      for _, p in ipairs(room:getOtherPlayers(player, true, true)) do
-        room:handleAddLoseSkills(p, "-qyt__yishe&", nil, false, true)
-      end
     end
   end,
 }
@@ -1500,7 +1473,6 @@ local qyt__xiliang = fk.CreateTriggerSkill{
   end,
 }
 Fk:addSkill(qyt__yishe_active)
-qyt__yishe:addRelatedSkill(qyt__yishe_trigger)
 zhanggongqi:addSkill(qyt__yishe)
 zhanggongqi:addSkill(qyt__xiliang)
 Fk:loadTranslationTable{

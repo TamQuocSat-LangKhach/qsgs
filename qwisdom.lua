@@ -280,10 +280,11 @@ local qw__bawang = fk.CreateTriggerSkill{
     local pindian = player:pindian({to}, self.name)
     local winner = pindian.results[to.id].winner
     if winner and winner == player and not player.dead and not player:prohibitUse(Fk:cloneCard("slash")) then
-      local targets = table.filter(room:getOtherPlayers(player), function (p) return not player:isProhibited(p, Fk:cloneCard("slash"))  end)
+      local targets = table.filter(room:getOtherPlayers(player, false), function (p) return not player:isProhibited(p, Fk:cloneCard("slash"))  end)
       if #targets == 0 then return false end
       local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 2, "#qw__bawang-slash", self.name, true)
       if #tos > 0 then
+        room:sortPlayersByAction(tos)
         room:useVirtualCard("slash", nil, player, table.map(tos, Util.Id2PlayerMapper), self.name, true)
       end
     end
@@ -304,7 +305,7 @@ local qw__weidai = fk.CreateViewAsSkill{
   before_use = function(self, player, use)
     local room = player.room
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if p.kingdom == "wu" then
+      if p.kingdom == "wu" and p:isAlive() then
         local cards = room:askForCard(p, 1, 1, false, self.name, true, ".|2~9|spade", "#qw__weidai-ask:"..player.id)
         if #cards > 0 then
           room:moveCards({
@@ -398,7 +399,7 @@ local qw__longluo = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local n = self.cost_data
-    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#qw__longluo-choose:::"..n, self.name, true)
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#qw__longluo-choose:::"..n, self.name, true)
     if #tos > 0 then
       self.cost_data = {tos[1], n}
       return true
