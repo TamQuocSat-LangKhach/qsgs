@@ -922,16 +922,16 @@ local qyt__lexue = fk.CreateActiveSkill{
       return #selected == 0 and Fk:getCardById(to_select).suit == Self:getMark("qyt__lexue_suit-turn")
     end
   end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    if Self:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
+  target_filter = function(self, to_select, selected, selected_cards, _, _, player)
+    if player:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
       return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
     elseif #selected_cards == 1 then
-      local card = Fk:cloneCard(Self:getMark("qyt__lexue_name-turn"))
+      local card = Fk:cloneCard(player:getMark("qyt__lexue_name-turn"))
       card.skillName = self.name
       if card.skill:getMinTargetNum() == 0 then
         return false
       else
-        return card.skill:targetFilter(to_select, selected, selected_cards, card)
+        return card.skill:targetFilter(to_select, selected, selected_cards, card, nil, player)
       end
     end
   end,
