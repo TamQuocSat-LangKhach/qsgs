@@ -935,15 +935,15 @@ local qyt__lexue = fk.CreateActiveSkill{
       end
     end
   end,
-  feasible = function(self, selected, selected_cards)
-    if Self:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
+  feasible = function(self, selected, selected_cards, player)
+    if player:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
       return #selected_cards == 0 and #selected == 1
     else
-      local card = Fk:cloneCard(Self:getMark("qyt__lexue_name-turn"))
+      local card = Fk:cloneCard(player:getMark("qyt__lexue_name-turn"))
       card.skillName = self.name
       card:addSubcards(selected_cards)
-      if Self:canUse(card) and not Self:prohibitUse(card) then
-        return #selected_cards == 1 and card.skill:feasible(selected, selected_cards, Self, card)
+      if player:canUse(card) and not player:prohibitUse(card) then
+        return #selected_cards == 1 and card.skill:feasible(selected, selected_cards, player, card)
       end
     end
   end,
@@ -1124,25 +1124,10 @@ Fk:loadTranslationTable{
 }
 
 local jiawenhe = General(extension, "qyt__jiaxu", "qun", 4)
-local qyt__dongcha = fk.CreateActiveSkill{
+local qyt__dongcha = fk.CreateTriggerSkill{
   name = "qyt__dongcha",
-  card_num = 999,
-  target_num = 0,
-  expand_pile = function()
-    return Self:getTableMark("qyt__dongcha")
-  end,
-  card_filter = function (self, to_select)
-    return table.contains(Self:getTableMark("qyt__dongcha"), to_select)
-  end,
-  can_use =function (self, player, card, extra_data)
-    return #player:getTableMark("qyt__dongcha") ~= 0
-  end,
-}
-local qyt__dongcha_trigger = fk.CreateTriggerSkill{
-  name = "#qyt__dongcha_trigger",
-  mute = true,
+  anim_type = "control",
   events = {fk.EventPhaseStart},
-  main_skill = qyt__dongcha,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Start
   end,
@@ -1155,40 +1140,17 @@ local qyt__dongcha_trigger = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    player:broadcastSkillInvoke("qyt__dongcha")
-    room:notifySkillInvoked(player, "qyt__dongcha", "control")
-    local to = room:getPlayerById(self.cost_data)
-    room:setPlayerMark(player, "qyt__dongcha-turn", to.id)
-    player:addBuddy(to)
-  end,
-
-  refresh_events = {fk.StartPlayCard},
-  can_refresh = function (self, event, target, player, data)
-    return target == player and player:getMark("qyt__dongcha-turn") ~= 0
-  end,
-  on_refresh = function (self, event, target, player, data)
-    local room = player.room
-    local to = room:getPlayerById(player:getMark("qyt__dongcha-turn"))
-    if to.dead or to:isKongcheng() then
-      room:setPlayerMark(player, "qyt__dongcha", 0)
-    else
-      room:setPlayerMark(player, "qyt__dongcha", to:getCardIds("h"))
-    end
+    player.room:setPlayerMark(player, "qyt__dongcha-turn", self.cost_data)
   end,
 }
-local qyt__dongcha_delay = fk.CreateTriggerSkill{
-  name = "#qyt__dongcha_delay",
-  mute = true,
-  events = {fk.TurnEnd},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("qyt__dongcha-turn") ~= 0
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local to = player.room:getPlayerById(player:getMark("qyt__dongcha-turn"))
-    player:removeBuddy(to)
-  end,
+local dongcha_visible = fk.CreateVisibilitySkill{
+  name = "#qyt__dongcha_visible",
+  card_visible = function(self, player, card)
+    local owner = Fk:currentRoom():getCardOwner(card.id)
+    if owner and owner.id == player:getMark("qyt__dongcha-turn") and table.contains(owner.player_cards[Player.Hand], card.id) then
+      return true
+    end
+  end
 }
 local qyt__dushi = fk.CreateTriggerSkill{
   name = "qyt__dushi",
@@ -1205,8 +1167,7 @@ local qyt__dushi = fk.CreateTriggerSkill{
     room:handleAddLoseSkills(data.damage.from, "benghuai", nil, true, false)
   end,
 }
-qyt__dongcha:addRelatedSkill(qyt__dongcha_trigger)
-qyt__dongcha:addRelatedSkill(qyt__dongcha_delay)
+qyt__dongcha:addRelatedSkill(dongcha_visible)
 jiawenhe:addSkill(qyt__dongcha)
 jiawenhe:addSkill(qyt__dushi)
 Fk:loadTranslationTable{
