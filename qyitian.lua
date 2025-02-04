@@ -890,6 +890,7 @@ local jiangboyue = General(extension, "qyt__jiangwei", "shu", 4)
 local qyt__lexue = fk.CreateActiveSkill{
   name = "qyt__lexue",
   anim_type = "special",
+  mute = true,
   card_num = function(self)
     if Self:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
       return 0
@@ -949,7 +950,9 @@ local qyt__lexue = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    room:notifySkillInvoked(player, self.name)
     if player:usedSkillTimes(self.name, Player.HistoryPhase) <= 1 then
+      player:broadcastSkillInvoke(self.name, 1)
       local target = room:getPlayerById(effect.tos[1])
       local card = room:askForCard(target, 1, 1, false, self.name, false, ".|.|.|hand", "#qyt__lexue-show:"..player.id)
       target:showCards(card)
@@ -964,10 +967,12 @@ local qyt__lexue = fk.CreateActiveSkill{
         room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
       end
     else
+      local card = Fk:cloneCard(player:getMark("qyt__lexue_name-turn"))
+      player:broadcastSkillInvoke(self.name, card.type == Card.TypeBasic and 2 or 3)
       local use = {
         from = player.id,
         tos = table.map(effect.tos, function (id) return {id} end),
-        card = Fk:cloneCard(player:getMark("qyt__lexue_name-turn")),
+        card = card,
       }
       use.card:addSubcards(effect.cards)
       use.card.skillName = self.name
@@ -991,7 +996,7 @@ local qyt__xunzhi = fk.CreateActiveSkill{
     player:drawCards(3, self.name)
     local generals = {}
     for name, general in pairs(Fk.generals) do
-      if general.package.extensionName ~= "hegemony" and general.kingdom == "shu" then
+      if general.kingdom == "shu" and Fk:canUseGeneral(name) then
         table.insert(generals, name)
       end
     end
@@ -1114,13 +1119,20 @@ Fk:loadTranslationTable{
   [":qyt__lexue"] = "出牌阶段限一次，你可以令一名其他角色展示一张手牌，你获得之。若为基本牌或普通锦囊牌，本回合出牌阶段，你可以将相同花色的牌"..
   "当此牌使用。",
   ["qyt__xunzhi"] = "殉志",
-  [":qyt__xunzhi"] = "限定技，出牌阶段，你可以摸三张牌，然后变身为游戏外的一名蜀势力武将（保留原有的技能），若如此做，此回合结束时你死亡。",
+  [":qyt__xunzhi"] = "限定技，出牌阶段，你可以摸三张牌，然后变身为游戏外的一名蜀势力武将（受禁将方案限制；保留原有的技能），若如此做，此回合结束时你死亡。",
   ["#qyt__lexue-show"] = "乐学：请展示一张手牌，令 %src 获得",
   ["#qyt__lexue-active"] = "乐学：令一名其他角色展示一张手牌",
   ["#qyt__lexue-viewas"] = "乐学：你可以将一张%arg牌当【%arg2】使用",
   ["@qyt__lexue-turn"] = "乐学",
   ["#qyt__xunzhi"] = "殉志：摸三张牌并变身为一名蜀势力武将，本回合结束时死亡！",
   ["#qyt__xunzhi-choose"] = "殉志：选择要变身的武将",
+
+  ["$qyt__lexue1"] = "勤习出奇策，乐学生妙计。",
+  ["$qyt__lexue2"] = "此乃五虎上将之勇！",
+  ["$qyt__lexue3"] = "此乃诸葛武侯之智。",
+  ["$qyt__xunzhi1"] = "丞相，计若不成，维亦无悔！",
+  ["$qyt__xunzhi2"] = "蜀汉英烈，忠魂佑我！",
+  ["~qyt__jiangwei"] = "吾计不成，乃天命也？",
 }
 
 local jiawenhe = General(extension, "qyt__jiaxu", "qun", 4)
