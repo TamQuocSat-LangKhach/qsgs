@@ -9,7 +9,6 @@ Fk:loadTranslationTable{
 }
 
 local godcaocao = General(extension, "qyt__godcaocao", "god", 3)
-godcaocao:addSkill("feiying")
 
 ---@param room Room
 local function mkGuixinTable(room)
@@ -86,12 +85,12 @@ local guixin = fk.CreateTriggerSkill{
   end,
 }
 godcaocao:addSkill(guixin)
+godcaocao:addSkill("feiying")
 Fk:loadTranslationTable{
   ["qyt__godcaocao"] = "魏武帝",
   ["#qyt__godcaocao"] = "超世之英杰",
   --["designer:qyt__godcaocao"] = "韩旭",  好像确实是韩旭
   ["illustrator:qyt__godcaocao"] = "狮子猿",
-  --["cv:qyt__godcaocao"] = "倚天の剑",  驾六龙，乘风而行……
 
   ["qyt__guixin"] = "归心",
   [":qyt__guixin"] = "结束阶段开始时或你受到伤害后，你可以选择一项：1.改变一名角色的势力；2.获得一个未加入游戏的主公技。",
@@ -99,6 +98,10 @@ Fk:loadTranslationTable{
   ["qyt-add-lord-skill"] = "获得一个未加入游戏的主公技",
   ["#qyt__guixin-choice"] = "归心：选择一个主公技获得，窗口可拖动",
   ["#qyt__guixin-kingdom"] = "归心：选择一名角色，改变其势力",
+
+  ["$qyt__guixin1"] = "挟天子以令诸侯，握敕令以制四方！",
+  ["$qyt__guixin2"] = "天下人才，皆入我麾下！",
+  ["~qyt__godcaocao"] = "盈缩之期，不定在天……",
 }
 
 local caochong = General(extension, "qyt__caochong", "wei", 3)
