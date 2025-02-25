@@ -1,5 +1,5 @@
-local qyitian = require "packages/qsgs/qyitian"
-local qwisdom = require "packages/qsgs/qwisdom"
+local qyitian = require "packages/qsgs/pkg/qyitian"
+local qwisdom = require "packages/qsgs/pkg/qwisdom"
 
 Fk:loadTranslationTable{ ["qsgs"] = "太阳神三国杀" }
 
