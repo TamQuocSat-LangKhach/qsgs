@@ -1,12 +1,12 @@
 local extension = Package:new("qyitian")
 extension.extensionName = "qsgs"
 
+extension:loadSkillSkelsByPath("./packages/qsgs/pkg/qyitian/skills")
+
 Fk:loadTranslationTable{
   ["qyitian"] = "神杀-倚天",
   ["qyt"] = "倚天",
 }
-
-extension:loadSkillSkels(require("packages.qsgs.pkg.qyitian.skills"))
 
 General:new(extension, "qyt__godcaocao", "god", 3):addSkills { "qyt__guixin", "feiying" }
 Fk:loadTranslationTable{
