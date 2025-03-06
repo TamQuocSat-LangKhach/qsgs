@@ -6,7 +6,7 @@ chouliang:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target == player and player.phase == Player.Finish and player:getHandcardNum() < 4
+    return player:hasSkill(chouliang.name) and target == player and player.phase == Player.Finish and player:getHandcardNum() < 4
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

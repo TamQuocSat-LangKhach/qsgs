@@ -5,7 +5,7 @@ local zhenggong = fk.CreateSkill({
 
 zhenggong:addEffect(fk.BeforeTurnStart, {
   can_trigger = function (self, event, target, player, data)
-    return player:hasSkill(self) and target ~= player and
+    return player:hasSkill(zhenggong.name) and target ~= player and
       not target:insideExtraTurn() and player.faceup
   end,
   on_cost = function(self, event, target, player, data)

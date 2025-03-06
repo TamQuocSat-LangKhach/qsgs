@@ -9,8 +9,8 @@ sizhan:addEffect(fk.DamageInflicted, {
     return target == player and player:hasSkill(sizhan.name)
   end,
   on_use = function(self, event, target, player, data)
+    data:preventDamage()
     player.room:addPlayerMark(player, "@qyt__sizhan", data.damage)
-    return true
   end,
 })
 

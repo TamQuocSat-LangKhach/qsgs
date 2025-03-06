@@ -5,12 +5,12 @@ local tongxin = fk.CreateSkill({
 tongxin:addEffect(fk.Damaged, {
   anim_type = "masochism",
   can_trigger = function (self, event, target, player, data)
-    return player:hasSkill(self) and (target:getMark("@@qyt__lianli_from") ~= 0 or target:getMark("@@qyt__lianli_to") ~= 0)
+    return player:hasSkill(tongxin.name) and (target:getMark("@@qyt__lianli_from") ~= 0 or target:getMark("@@qyt__lianli_to") ~= 0)
   end,
   on_trigger = function(self, event, target, player, data)
     for i = 1, data.damage do
       self:doCost(event, target, player, data)
-      if not player:hasSkill(self) or event:isCancelCost(self) or table.every(player.room.alive_players, function (p)
+      if not player:hasSkill(tongxin.name) or event:isCancelCost(self) or table.every(player.room.alive_players, function (p)
         return p:getMark("@@qyt__lianli_from") == 0 and p:getMark("@@qyt__lianli_to") == 0
       end) then break end
     end

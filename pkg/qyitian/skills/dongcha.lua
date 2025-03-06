@@ -6,7 +6,8 @@ local dongcha = fk.CreateSkill({
 dongcha:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
   can_trigger = function (self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Start
+    return target == player and player:hasSkill(dongcha.name) and player.phase == Player.Start and
+      #player.room:getOtherPlayers(player, false) > 0
   end,
   on_cost = function(self, event, target, player, data)
     local to = player.room:askToChoosePlayers(player, {

@@ -46,7 +46,9 @@ shenjun:addEffect(fk.DamageInflicted, {
     return player:hasSkill(shenjun.name) and target == player and
     data.from and player:compareGenderWith(data.from, true) and data.damageType ~= fk.ThunderDamage
   end,
-  on_use = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    data:preventDamage()
+  end,
 })
 
 Fk:loadTranslationTable{

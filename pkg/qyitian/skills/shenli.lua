@@ -6,7 +6,7 @@ local shenli = fk.CreateSkill({
 shenli:addEffect(fk.DamageCaused, {
   anim_type = "offensive",
   can_trigger = function (self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:getMark("@qyt__sizhan") > 0 and
+    return target == player and player:hasSkill(shenli.name) and player:getMark("@qyt__sizhan") > 0 and
       data.card and data.card.trueName == "slash" and player:usedSkillTimes(shenli.name, Player.HistoryPhase) == 0
   end,
   on_use = function(self, event, target, player, data)

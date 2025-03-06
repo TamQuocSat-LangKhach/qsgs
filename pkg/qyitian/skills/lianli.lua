@@ -16,7 +16,7 @@ end)
 
 lianli:addEffect(fk.EventPhaseStart, {
   can_trigger = function (self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Start and
+    return target == player and player:hasSkill(lianli.name) and player.phase == Player.Start and
       table.find(player.room.alive_players, function(p)
         return p.gender == General.Male and p ~= player
       end)
