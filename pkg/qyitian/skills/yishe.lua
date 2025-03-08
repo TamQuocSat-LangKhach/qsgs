@@ -3,8 +3,6 @@ local yishe = fk.CreateSkill({
   attached_skill_name = "qyt__yishe&",
 })
 
-local U = require "packages/utility/utility"
-
 yishe:addEffect("active", {
   prompt = "#qyt__yishe",
   expand_pile = "zhanggongqi_rice",
@@ -31,7 +29,7 @@ yishe:addEffect("active", {
     local to_get = table.filter(effect.cards, function(id)
       return player:getPileNameOfId(id) == "zhanggongqi_rice"
     end)
-    U.swapCardsWithPile(player, to_put, to_get, yishe.name, "zhanggongqi_rice", true)
+    room:swapCardsWithPile(player, to_put, to_get, yishe.name, "zhanggongqi_rice", true)
   end,
 })
 
