@@ -2,8 +2,6 @@ local xiliang = fk.CreateSkill {
   name = "qyt__xiliang",
 }
 
-local U = require "packages/utility/utility"
-
 xiliang:addEffect(fk.AfterCardsMove, {
   anim_type = "drawcard",
   events = {fk.AfterCardsMove},
@@ -25,7 +23,7 @@ xiliang:addEffect(fk.AfterCardsMove, {
           end
         end
       end
-      cards = U.moveCardsHoldingAreaCheck(room, cards)
+      cards = room.logic:moveCardsHoldingAreaCheck(cards)
       if #cards > 0 then
         event:setCostData(self, {cards = cards})
         return true
