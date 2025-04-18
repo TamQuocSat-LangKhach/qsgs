@@ -1,6 +1,5 @@
 local dongcha = fk.CreateSkill({
   name = "qyt__dongcha",
-  tags = {Skill.Compulsory},
 })
 
 dongcha:addEffect(fk.EventPhaseStart, {
@@ -10,8 +9,9 @@ dongcha:addEffect(fk.EventPhaseStart, {
       #player.room:getOtherPlayers(player, false) > 0
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askToChoosePlayers(player, {
-      targets = player.room:getOtherPlayers(player, false),
+    local room = player.room
+    local to = room:askToChoosePlayers(player, {
+      targets = room:getOtherPlayers(player, false),
       min_num = 1,
       max_num = 1,
       prompt = "#qyt__dongcha-choose",
@@ -20,12 +20,12 @@ dongcha:addEffect(fk.EventPhaseStart, {
       no_indicate = true,
     })[1]
     if to then
-      event:setCostData(self, {to = to.id})
+      event:setCostData(self, {to = to})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, "qyt__dongcha-turn", event:getCostData(self).to)
+    player.room:setPlayerMark(player, "qyt__dongcha-turn", event:getCostData(self).to.id)
   end,
 })
 

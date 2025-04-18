@@ -9,7 +9,12 @@ shipo:addEffect(fk.EventPhaseStart, {
   end,
   on_cost = function (self, event, target, player, data)
     local cards = player.room:askToDiscard(player, {
-      min_num = 2, max_num = 2, include_equip = true, cancelable = true, skip = true, pattern = ".", skill_name = shipo.name,
+      min_num = 2,
+      max_num = 2,
+      include_equip = true,
+      cancelable = true,
+      skip = true,
+      skill_name = shipo.name,
       prompt = "#qw__shipo-card::"..target.id,
     })
     if #cards > 0 then
@@ -19,7 +24,7 @@ shipo:addEffect(fk.EventPhaseStart, {
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:throwCard(event:getCostData(self), self.name, player, player)
+    room:throwCard(event:getCostData(self).cards, shipo.name, player, player)
     local cards = target:getCardIds("j")
     if #cards > 0 and not player.dead then
       room:obtainCard(player, cards, true, fk.ReasonJustMove, player, shipo.name)

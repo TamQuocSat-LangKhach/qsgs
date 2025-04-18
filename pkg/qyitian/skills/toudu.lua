@@ -1,6 +1,5 @@
 local toudu = fk.CreateSkill({
   name = "qyt__toudu",
-  tags = {Skill.Compulsory},
 })
 
 toudu:addEffect(fk.Damaged, {
@@ -15,8 +14,8 @@ toudu:addEffect(fk.Damaged, {
       skill_name = toudu.name,
       include_equip = true,
       cancelable = true,
-      pattern = ".",
       prompt = "#qyt__toudu-invoke",
+      skip = true,
     })
     if #cards > 0 then
       event:setCostData(self, {cards = cards})
@@ -24,7 +23,7 @@ toudu:addEffect(fk.Damaged, {
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:throwCard(event:getCostData(self), self.name, player, player)
+    player.room:throwCard(event:getCostData(self).cards, toudu.name, player, player)
     if player.dead then return end
     player:turnOver()
     if player.dead then return end
