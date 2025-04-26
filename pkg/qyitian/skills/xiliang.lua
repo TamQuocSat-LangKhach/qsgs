@@ -4,7 +4,6 @@ local xiliang = fk.CreateSkill {
 
 xiliang:addEffect(fk.AfterCardsMove, {
   anim_type = "drawcard",
-  events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(xiliang.name) then
       local cards = {}

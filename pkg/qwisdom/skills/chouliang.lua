@@ -4,7 +4,6 @@ local chouliang = fk.CreateSkill{
 
 chouliang:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(chouliang.name) and target == player and player.phase == Player.Finish and player:getHandcardNum() < 4
   end,

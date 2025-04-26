@@ -9,8 +9,7 @@ zonghuo:addEffect(fk.AfterCardUseDeclared, {
     return target == player and player:hasSkill(zonghuo.name) and data.card.trueName == "slash" and data.card.name ~= "fire__slash"
   end,
   on_use = function(self, event, target, player, data)
-    data:changeCardName("fire__slash")
-    data.card.skillName = "fire__slash"
+    data:changeCard("fire__slash", data.card.suit, data.card.number, zonghuo.name)
   end,
 })
 

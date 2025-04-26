@@ -71,29 +71,31 @@ xunzhi:addEffect("active", {
         table.insertIfNeed(skills, name)
       end
     end
-    for _, s in ipairs(Fk.generals[player.general].skills) do
-      if #s.attachedKingdom > 0 then
-        if table.contains(s.attachedKingdom, player.kingdom) then
-          table.insertIfNeed(skills, s.name)
+    for _, s in ipairs(Fk.generals[player.general]:getSkillNameList()) do
+      local skill = Fk.skills[s]
+      if skill:hasTag(Skill.AttachedKingdom) then
+        if table.contains(skill:getSkeleton().attached_kingdom, player.kingdom) then
+          table.insertIfNeed(skills, s)
         else
-          if table.contains(skills, s.name) then
-            table.removeOne(skills, s.name)
+          if table.contains(skills, s) then
+            table.removeOne(skills, s)
           else
-            table.insertIfNeed(skills, "-"..s.name)
+            table.insertIfNeed(skills, "-"..s)
           end
         end
       end
     end
     if player.deputyGeneral ~= "" then
-      for _, s in ipairs(Fk.generals[player.deputyGeneral].skills) do
-        if #s.attachedKingdom > 0 then
-          if table.contains(s.attachedKingdom, player.kingdom) then
-            table.insertIfNeed(skills, s.name)
+      for _, s in ipairs(Fk.generals[player.deputyGeneral]:getSkillNameList()) do
+        local skill = Fk.skills[s]
+        if skill:hasTag(Skill.AttachedKingdom) then
+          if table.contains(skill:getSkeleton().attached_kingdom, player.kingdom) then
+            table.insertIfNeed(skills, s)
           else
-            if table.contains(skills, s.name) then
-              table.removeOne(skills, s.name)
+            if table.contains(skills, s) then
+              table.removeOne(skills, s)
             else
-              table.insertIfNeed(skills, "-"..s.name)
+              table.insertIfNeed(skills, "-"..s)
             end
           end
         end
@@ -104,21 +106,19 @@ xunzhi:addEffect("active", {
 })
 
 xunzhi:addEffect(fk.TurnEnd, {
+  anim_type = "negative",
+  is_delay_effect = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:usedSkillTimes(xunzhi.name, Player.HistoryTurn) > 0
   end,
-  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player.room:killPlayer{
       who = player,
     }
   end,
-  is_delay_effect = true,
-  mute = true,
 })
 
-xunzhi:addEffect(fk.TurnEnd, {
-  refresh_events = {fk.BeforeGameOverJudge},
+xunzhi:addEffect(fk.BeforeGameOverJudge, {
   can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("qyt__xunzhi") ~= 0
   end,
