@@ -8,7 +8,7 @@ weidai:addEffect("viewas", {
   prompt = "#qw__weidai",
   pattern = "analeptic",
   card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
+  view_as = function(self, player, cards)
     if #cards ~= 0 then return nil end
     local c = Fk:cloneCard("analeptic")
     c.skillName = weidai.name
