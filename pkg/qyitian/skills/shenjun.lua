@@ -12,7 +12,11 @@ local function useShenjun(player, event)
     elseif player.gender == General.Female then gender = "female" end
     table.removeOne(choices, gender)
   end
-  local choice = room:askForChoice(player, choices, shenjun.name, "#qyt__shenjun-choose")
+  local choice = room:askToChoice(player, {
+        choices = choices,
+        skill_name = shenjun.name,
+        prompt = "#qyt__shenjun-choose",
+      })
   room:setPlayerProperty(player, "gender", choice == "male" and General.Male or General.Female)
   room:sendLog{
     type = "#qyt__shenjun_log",

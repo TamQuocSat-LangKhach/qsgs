@@ -18,10 +18,10 @@ jueji:addEffect("active", {
     local target = effect.tos[1]
     while not (player.dead or target.dead or not player:canPindian(target)) do
       local pindian = player:pindian({target}, self.name)
-      if pindian.results[target.id].winner ~= player then break end
-      if room:getCardArea(pindian.results[target.id].toCard) == Card.DiscardPile then
+      if pindian.results[target].winner ~= player then break end
+      if room:getCardArea(pindian.results[target].toCard) == Card.DiscardPile then
         room:delay(600)
-        room:obtainCard(player, pindian.results[target.id].toCard, true, fk.ReasonJustMove)
+        room:obtainCard(player, pindian.results[target].toCard, true, fk.ReasonJustMove)
       end
       if not player.dead then
         player:drawCards(1, self.name)
