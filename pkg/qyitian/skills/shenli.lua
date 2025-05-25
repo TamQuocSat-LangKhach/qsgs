@@ -10,7 +10,7 @@ shenli:addEffect(fk.DamageCaused, {
       data.card and data.card.trueName == "slash" and player:usedSkillTimes(shenli.name, Player.HistoryPhase) == 0
   end,
   on_use = function(self, event, target, player, data)
-    data.damage = data.damage + math.min(player:getMark("@qyt__sizhan"), 3)
+    data:changeDamage(math.min(player:getMark("@qyt__sizhan"), 3))
   end,
 })
 
