@@ -12,10 +12,8 @@ taichen:addEffect("active", {
     return Fk:getCardById(to_select).sub_type == Card.SubtypeWeapon
   end,
   target_filter = function (self, player, to_select, selected, selected_cards)
-    if #selected == 0 and to_select ~= player and not to_select:isAllNude() then
-      -- 判飞刀吗？
-      return player:inMyAttackRange(to_select)
-    end
+    return #selected == 0 and to_select ~= player and not to_select:isAllNude() and
+      player:inMyAttackRange(to_select, nil, selected_cards)
   end,
   on_use = function(self, room, effect)
     local player = effect.from

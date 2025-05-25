@@ -4,11 +4,11 @@ local lexue = fk.CreateSkill({
 
 lexue:addEffect("active", {
   mute = true,
-  prompt = function(self)
-    if Self:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
+  prompt = function(self, player)
+    if player:usedSkillTimes(self.name, Player.HistoryPhase) <= 0 then
       return "#qyt__lexue-active"
     else
-      local mark = Self:getMark("@qyt__lexue-turn")
+      local mark = player:getMark("@qyt__lexue-turn")
       if mark == 0 then return " " end
       return "#qyt__lexue-viewas:::"..mark[1]..":"..mark[2]
     end

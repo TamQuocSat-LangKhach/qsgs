@@ -48,11 +48,12 @@ lianli:addEffect(fk.EventPhaseStart, {
   end,
 })
 
-lianli:addEffect(fk.AskForCardResponse, {
-  mute = true,
+local spec = {
+  anim_type = "support",
+  is_delay_effect = true,
   can_trigger = function (self, event, target, player, data)
     return not player.dead and
-      (data.cardName == "jink" or Exppattern:Parse(data.pattern):matchExp("jink")) and
+      Exppattern:Parse(data.pattern):matchExp("jink") and
       (data.extraData == nil or data.extraData.qyt__lianli_ask == nil) and
       table.contains(target:getTableMark("@@qyt__lianli_from"), player.id)
   end,
@@ -69,52 +70,22 @@ lianli:addEffect(fk.AskForCardResponse, {
     if respond then
       respond.skipDrop = true
       room:responseCard(respond)
-      local new_card = Fk:cloneCard("jink")
-      new_card.skillName = self.name
-      new_card:addSubcards(room:getSubcardsByRule(respond.card, { Card.Processing }))
-      data.result = new_card
-      return true
-    end
-  end,
-}, {is_delay_effect = true})
 
-lianli:addEffect(fk.AskForCardUse, {
-  mute = true,
-  is_delay_effect = true,
-  can_trigger = function (self, event, target, player, data)
-    return not player.dead and
-      (Exppattern:Parse(data.pattern):matchExp("jink")) and
-      table.contains(target:getTableMark("@@qyt__lianli_from"), player.id)
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local respond = room:askToResponse(player, {
-      skill_name = self.name,
-      pattern = "jink",
-      prompt = "#qyt__lianli-jink-use:"..target.id,
-      cancelable = true,
-      extra_data = {qyt__lianli_ask = true},
-    })
-    if respond then
-      respond.skipDrop = true
-      room:responseCard(respond)
-      local new_card = Fk:cloneCard("jink")
-      new_card.skillName = self.name
+      local new_card = Fk:cloneCard('jink')
+      new_card.skillName = lianli.name
       new_card:addSubcards(room:getSubcardsByRule(respond.card, { Card.Processing }))
-      data.result = {
-        from = target.id,
+      local result = {
+        from = player,
         card = new_card,
-        tos = {}
       }
-      if data.eventData then
-        data.result.toCard = data.eventData.toCard
-        data.result.responseToEvent = data.eventData.responseToEvent
-      end
+      data.result = result
       return true
     end
   end,
-})
+}
+
+lianli:addEffect(fk.AskForCardResponse, spec)
+lianli:addEffect(fk.AskForCardUse, spec)
 
 lianli:addEffect(fk.TurnStart, {
   can_refresh = function(self, event, target, player, data)
